@@ -19,6 +19,7 @@ method_map_t method_map [] = {
 
 char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
 {
+    char *output;
     char uuid[1024];
     char host[1024];
     sprintf(uuid, "%s", evhttp_find_header(params, "uuid"));
@@ -26,9 +27,17 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     
     xen_vm vm;
     xen_session * host_session;
+    //从hash table中根据hostname获取session
     host_session = (xen_session *)hmap_get(hashMap, (void *)host);
+    if(host_session == NULL) {
+        output = method_error("Can not find host");
+        return output;
+    }
+   
+    //根据uuid查询vm
     xen_vm_get_by_uuid(host_session, &vm, uuid);
     xen_vm_record *vm_record = xen_vm_record_alloc();
+    //得到vm的record
     xen_vm_get_record(host_session, &vm_record, vm);
     
     cJSON *json_root, *json_data, *json_vms, *single_vm;
@@ -44,7 +53,7 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     cJSON_AddNumberToObject(json_data, "mem_static_max", vm_record->memory_static_max);
     cJSON_AddNumberToObject(json_data, "vcpu_max", vm_record->vcpus_max);
     
-    char * output = cJSON_PrintUnformatted(json_root);
+    output = cJSON_PrintUnformatted(json_root);
     
     cJSON_Delete(json_root);
     xen_vm_record_free(vm_record);
@@ -57,12 +66,16 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
 char * get_vm_list(struct evhttp_request *req,
                                       struct evkeyvalq *params) {
     
+    char *output;
     char host[1024];
     sprintf(host, "%s", evhttp_find_header(params, "host"));
-    fprintf(stderr, "%s\n", host);
     
     xen_session * host_session;
     host_session = (xen_session *)hmap_get(hashMap, (void *)host);
+    if(host_session == NULL) {
+        output = method_error("Can not find host");
+        return output;
+    }
     
     cJSON *json_root, *json_data, *json_vms, *single_vm;
     //createobject是在堆上分配的内存
@@ -72,10 +85,10 @@ char * get_vm_list(struct evhttp_request *req,
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
     cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
     
-    //获取所有虚拟机
     xen_vm_set * vms = xen_vm_set_alloc(100);
     xen_vm_record *vm_record = xen_vm_record_alloc();
     
+    //获取所有虚拟机
     xen_vm_get_all(host_session, &vms);
     
     //fprintf(stderr, "All vm: %d\n", (int)vms->size);
@@ -103,7 +116,7 @@ char * get_vm_list(struct evhttp_request *req,
     
     cJSON_AddNumberToObject(json_data, "running_size", running_vm_size);
     
-    char * output = cJSON_PrintUnformatted(json_root);
+    output = cJSON_PrintUnformatted(json_root);
     
     cJSON_Delete(json_root);
     xen_vm_record_free(vm_record);
@@ -118,6 +131,17 @@ char * method_notfound(void) {
     json_root = cJSON_CreateObject();
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("1"));
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("method not found"));
+    char * output = cJSON_PrintUnformatted(json_root);
+    cJSON_Delete(json_root);
+    return output;
+}
+
+
+char * method_error(const char *msg) {
+    cJSON *json_root;
+    json_root = cJSON_CreateObject();
+    cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("1"));
+    cJSON_AddItemToObject(json_root, "message", cJSON_CreateString(msg));
     char * output = cJSON_PrintUnformatted(json_root);
     cJSON_Delete(json_root);
     return output;
