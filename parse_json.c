@@ -25,8 +25,10 @@ json_config_t * parse_config_json(void)
         cJSON *all_server, *server_t, *interval_t, *daemon_t;
         cJSON *host, *username, *password;
         
-        host_info_t * all_hosts = calloc(MAX_XEN_HOST, sizeof(host_info_t));
-        all_host_t * xen_config = calloc(1, sizeof(all_host_t));
+        host_info_t * all_hosts = NULL;
+        all_host_t * xen_config = NULL;
+        all_hosts = calloc(MAX_XEN_HOST, sizeof(host_info_t));
+        xen_config = calloc(1, sizeof(all_host_t));
         xen_config->size = 0;
         xen_config->hosts = all_hosts;
         xen_config->file_buf = data;

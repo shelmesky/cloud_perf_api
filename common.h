@@ -31,7 +31,7 @@ typedef struct method_map_s
 
 
 extern virConnectPtr openConnect(char *, virConnectAuthPtr, int);
-extern xen_session *XenLogin(const char*, const char*);
+extern xen_session *XenLogin(const char *, const char*, const char*);
 extern void *XenGetAllHost(xen_session *, xen_host_set **);
 extern void parse_config(json_config_t **);
 extern void parse_config_free(json_config_t *);

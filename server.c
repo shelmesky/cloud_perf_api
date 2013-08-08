@@ -7,6 +7,7 @@ int port = 1997;
 int nthreads = 100;
 
 xen_session *session;
+hashmap *hashMap;
 
 
 method_map_t method_map [] = {
@@ -18,12 +19,17 @@ method_map_t method_map [] = {
 
 char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
 {
-    char * uuid = (char *)calloc(1024, sizeof(char)); 
+    char uuid[1024];
+    char host[1024];
     sprintf(uuid, "%s", evhttp_find_header(params, "uuid"));
+    sprintf(host, "%s", evhttp_find_header(params, "host"));
+    
     xen_vm vm;
-    xen_vm_get_by_uuid(session, &vm, uuid);
+    xen_session * host_session;
+    host_session = (xen_session *)hmap_get(hashMap, (void *)host);
+    xen_vm_get_by_uuid(host_session, &vm, uuid);
     xen_vm_record *vm_record = xen_vm_record_alloc();
-    xen_vm_get_record(session, &vm_record, vm);
+    xen_vm_get_record(host_session, &vm_record, vm);
     
     cJSON *json_root, *json_data, *json_vms, *single_vm;
     //createobject是在堆上分配的内存
@@ -51,6 +57,13 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
 char * get_vm_list(struct evhttp_request *req,
                                       struct evkeyvalq *params) {
     
+    char host[1024];
+    sprintf(host, "%s", evhttp_find_header(params, "host"));
+    fprintf(stderr, "%s\n", host);
+    
+    xen_session * host_session;
+    host_session = (xen_session *)hmap_get(hashMap, (void *)host);
+    
     cJSON *json_root, *json_data, *json_vms, *single_vm;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
@@ -63,7 +76,7 @@ char * get_vm_list(struct evhttp_request *req,
     xen_vm_set * vms = xen_vm_set_alloc(100);
     xen_vm_record *vm_record = xen_vm_record_alloc();
     
-    xen_vm_get_all(session, &vms);
+    xen_vm_get_all(host_session, &vms);
     
     //fprintf(stderr, "All vm: %d\n", (int)vms->size);
     cJSON_AddNumberToObject(json_data, "size", (unsigned int)vms->size);
@@ -75,7 +88,7 @@ char * get_vm_list(struct evhttp_request *req,
     //查看每台虚拟机
     //并排除模板、快照、和管理域的虚拟机
     for(j=0; j<vm_size; j++) {
-        xen_vm_get_record(session, &vm_record, vms->contents[j]);
+        xen_vm_get_record(host_session, &vm_record, vms->contents[j]);
         
         if(!vm_record->is_a_snapshot && !vm_record->is_a_template &&
             !vm_record->is_control_domain && !vm_record->is_snapshot_from_vmpp)
@@ -100,7 +113,7 @@ char * get_vm_list(struct evhttp_request *req,
 }
 
 char * method_notfound(void) {
-    cJSON *json_root, *json_data;
+    cJSON *json_root;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("1"));
@@ -204,8 +217,29 @@ int main(void)
     json_config_t * config = (json_config_t *)calloc(1, sizeof(json_config_t));
     parse_config(&config);
     
-    //登录XenServer API
-    session = XenLogin(username, password);
+    //init hashmap
+    hashMap = mk_hmap(str_hash_fn, str_eq_fn, str_del_fn, 1);
+    
+    if(config->all_servers != NULL) {
+        //登录XenServer API
+        all_host_t * xen_hosts = (all_host_t *)config->all_servers;
+        while(xen_hosts->hosts->hostname != NULL) {
+            char *hostname_ori = xen_hosts->hosts->hostname;
+            size_t hostname_len = strlen(hostname_ori);
+            char *hostname = calloc(1024, sizeof(char));
+            char *http_protocol = "http://";
+            strncat(hostname, http_protocol, strlen(http_protocol));
+            strncat(hostname, hostname_ori, (int)hostname_len);
+            
+            session = XenLogin(hostname,
+                               xen_hosts->hosts->username,
+                               xen_hosts->hosts->password);
+            hmap_add(hashMap,
+                     (void *)hostname_ori,
+                     (void *)session);
+            xen_hosts->hosts++;
+        }
+    }
     
     /*
     //获取所有XenServer
@@ -294,6 +328,7 @@ int main(void)
     }
     
     parse_config_free(config);
+    free_hmap(hashMap);
     return 0;
 }
 
