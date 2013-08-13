@@ -22,8 +22,11 @@ json_config_t * parse_config_json(void)
 	else
 	{
         int i=0;
+        char *delimiter = ".";
+        char *sp=NULL;
         cJSON *all_server, *server_t, *interval_t, *daemon_t;
         cJSON *host, *username, *password;
+        cJSON *convert_t;
         
         host_info_t * all_hosts = NULL;
         all_host_t * xen_config = NULL;
@@ -36,7 +39,9 @@ json_config_t * parse_config_json(void)
         all_server = cJSON_GetObjectItem(json, "servers");
         interval_t = cJSON_GetObjectItem(json, "interval");
         daemon_t = cJSON_GetObjectItem(json, "daemon");
+        convert_t = cJSON_GetObjectItem(json, "converter");
         
+        // get all xenservers
         while((server_t = cJSON_GetArrayItem(all_server, i)) != NULL) {
             host = cJSON_GetObjectItem(server_t, "host");
             username = cJSON_GetObjectItem(server_t, "username");
@@ -49,6 +54,13 @@ json_config_t * parse_config_json(void)
         }
         
         config = (json_config_t *)calloc(1, sizeof(json_config_t));
+        
+        // get the name of converter
+        sp = strtok(convert_t->valuestring, delimiter);
+        config->convert_module = sp;
+        sp = strtok(NULL, delimiter);
+        config->convert_func = sp;
+        
         config->all_servers = (void *)xen_config;
         config->server_interval = interval_t->valueint;
         config->server_daemon = daemon_t->valueint;

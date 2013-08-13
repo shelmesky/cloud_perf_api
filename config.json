@@ -3,6 +3,7 @@
 		{"host": "192.2.3.44", "username": "root", "password": "0x55aa"}
 	],
 	"interval": 300,
-	"daemon": 1
+	"daemon": 1,
+	"converter": "converter.converter"
 }
 

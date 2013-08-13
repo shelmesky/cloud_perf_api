@@ -5,6 +5,8 @@
 
 int port = 1997;
 int nthreads = 100;
+char *converter_module = NULL;
+char *converter_func = NULL;
 
 xen_session *session;
 hashmap *hashMap;
@@ -63,7 +65,7 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     PyGILState_STATE state;
     state = PyGILState_Ensure();
     
-    char * ret = PyCall("get", "get", "(s)", "hahaha");
+    char * ret = PyCall(converter_module, converter_func, "(s)", "hahaha");
     
     PyGILState_Release(state);
     // end execute python
@@ -326,6 +328,10 @@ int main(void)
     //parse config.json
     json_config_t * config = (json_config_t *)calloc(1, sizeof(json_config_t));
     parse_config(&config);
+    
+    // set converter module and func
+    converter_module = config->convert_module;
+    converter_func = config->convert_func;
     
     //init hashmap
     hashMap = mk_hmap(str_hash_fn, str_eq_fn, str_del_fn, 1);

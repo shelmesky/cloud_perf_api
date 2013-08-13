@@ -24,6 +24,8 @@ typedef struct json_config_s {
     void *all_servers;
     int server_interval;
     int server_daemon;
+    char *convert_module;
+    char *convert_func;
 } json_config_t;
 
 json_config_t * parse_config_json(void);
