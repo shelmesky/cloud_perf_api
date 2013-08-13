@@ -9,6 +9,8 @@ int nthreads = 100;
 xen_session *session;
 hashmap *hashMap;
 
+void exit_hook(int);
+
 
 method_map_t method_map [] = {
     {"get_vm", get_vm},
@@ -51,6 +53,7 @@ char * PyCall(const char * module, const char *func, const char *format, ... ) {
     else {
         printf("import module error\n");
     }
+    return NULL;
 }
 
 
@@ -75,17 +78,16 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     if((str_length = strlen(host)) == 0)
     {
         fprintf(stderr, "Can not find host parameter");
-        return;
+        return NULL;
     }
     if((str_length = strlen(uuid)) == 0)
     {
         fprintf(stderr, "Can not find host parameter");
-        return;
+        return NULL;
     }
     
     xen_vm vm;
     xen_session * host_session;
-    xen_vm_metrics vm_metrics;
     //从hash table中根据hostname获取session
     host_session = (xen_session *)hmap_get(hashMap, (void *)host);
     if(host_session == NULL) {
@@ -106,7 +108,7 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
     cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
-    //cJSON_AddItemToObject(json_root, "pyret", cJSON_CreateString(ret));
+    cJSON_AddItemToObject(json_root, "pyret", cJSON_CreateString(ret));
     
     cJSON_AddStringToObject(json_data, "uuid", vm_record->uuid);
     cJSON_AddStringToObject(json_data, "name_label", vm_record->name_label);
@@ -133,7 +135,7 @@ char * get_vm_list(struct evhttp_request *req,
     if((str_length = strlen(host)) == 0)
     {
         fprintf(stderr, "Can not find host parameter");
-        return;
+        return NULL;
     }
     
     xen_session * host_session;
@@ -380,6 +382,7 @@ int main(void)
         pthread_join(threads[i], NULL);
     }
     
+    //Py_InitializeEx(0);
     parse_config_free(config);
     free_hmap(hashMap);
     return 0;
