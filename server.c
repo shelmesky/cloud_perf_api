@@ -17,6 +17,7 @@ void exit_hook(int);
 method_map_t method_map [] = {
     {"get_vm", get_vm},
     {"get_vm_list", get_vm_list},
+    {"get_perf", get_perf},
     {NULL, NULL}
 };
 
@@ -56,6 +57,12 @@ char * PyCall(const char * module, const char *func, const char *format, ... ) {
         printf("import module error\n");
     }
     return NULL;
+}
+
+
+char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
+{
+   return NULL; 
 }
 
 
