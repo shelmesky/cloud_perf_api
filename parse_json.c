@@ -16,7 +16,7 @@ json_config_t * parse_config_json(void)
     char *data;
 	json_config_t * config = NULL;
 
-    data = read_file("server.conf");
+    data = read_file("config.json");
 	json = cJSON_Parse(data);
 	if (!json) {printf("Error before: [%s]\n",cJSON_GetErrorPtr());}
 	else
@@ -69,26 +69,6 @@ char *read_file(char *filename)
 void parse_config(json_config_t **configuration) {
     json_config_t * config = parse_config_json();
     *configuration = config;
-    
-    /*
-    if(config->all_servers != NULL) {
-    all_host_t * xen_hosts = (all_host_t *)config->all_servers;
-    while(xen_hosts->hosts->hostname != NULL) {
-        fprintf(stderr, "%s : %s : %s\n",
-                xen_hosts->hosts->hostname,
-                xen_hosts->hosts->username,
-                xen_hosts->hosts->password
-        );
-        xen_hosts->hosts++;
-    }
-    
-    fprintf(stderr, "interval: %d\ndaemon: %d\n", config->server_interval, config->server_daemon);
-    }
-    else
-    {
-        fprintf(stderr, "Empty config file\n");
-    }
-    */
 }
 
 

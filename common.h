@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <python2.7/Python.h>
 #include "virt.h"
 #include "hash.h"
 #include "xen.h"

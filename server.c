@@ -17,16 +17,75 @@ method_map_t method_map [] = {
 };
 
 
+void exit_hook(int number) {
+    PyGILState_Ensure();
+    Py_Finalize();
+}
+
+
+char * PyCall(const char * module, const char *func, const char *format, ... ) {
+    PyObject *pModule = NULL;
+    PyObject *pFunc = NULL;
+    PyObject *pParm = NULL;
+    PyObject *pRetVal = NULL;
+
+    pModule = PyImport_ImportModule(module);
+    if(pModule != NULL) {
+        pFunc = PyObject_GetAttrString(pModule, func);
+        if(pFunc != NULL) {
+            va_list vargs;
+            va_start(vargs, format);
+            pParm = Py_VaBuildValue(format, vargs);
+            va_end(vargs);
+
+            pRetVal = PyEval_CallObject(pFunc, pParm);
+
+            char *ret;
+            PyArg_Parse(pRetVal, "s", &ret);
+            return ret;
+        }
+        else {
+            printf("import function error\n");
+        }
+    }
+    else {
+        printf("import module error\n");
+    }
+}
+
+
 char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
 {
+    // start executer python script
+    PyGILState_STATE state;
+    state = PyGILState_Ensure();
+    
+    char * ret = PyCall("get", "get", "(s)", "hahaha");
+    
+    PyGILState_Release(state);
+    // end execute python
+    
     char *output;
     char uuid[1024];
     char host[1024];
     sprintf(uuid, "%s", evhttp_find_header(params, "uuid"));
     sprintf(host, "%s", evhttp_find_header(params, "host"));
     
+    size_t str_length = 0;
+    if((str_length = strlen(host)) == 0)
+    {
+        fprintf(stderr, "Can not find host parameter");
+        return;
+    }
+    if((str_length = strlen(uuid)) == 0)
+    {
+        fprintf(stderr, "Can not find host parameter");
+        return;
+    }
+    
     xen_vm vm;
     xen_session * host_session;
+    xen_vm_metrics vm_metrics;
     //从hash table中根据hostname获取session
     host_session = (xen_session *)hmap_get(hashMap, (void *)host);
     if(host_session == NULL) {
@@ -47,6 +106,7 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
     cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
+    //cJSON_AddItemToObject(json_root, "pyret", cJSON_CreateString(ret));
     
     cJSON_AddStringToObject(json_data, "uuid", vm_record->uuid);
     cJSON_AddStringToObject(json_data, "name_label", vm_record->name_label);
@@ -69,6 +129,12 @@ char * get_vm_list(struct evhttp_request *req,
     char *output;
     char host[1024];
     sprintf(host, "%s", evhttp_find_header(params, "host"));
+    size_t str_length = 0;
+    if((str_length = strlen(host)) == 0)
+    {
+        fprintf(stderr, "Can not find host parameter");
+        return;
+    }
     
     xen_session * host_session;
     host_session = (xen_session *)hmap_get(hashMap, (void *)host);
@@ -197,7 +263,7 @@ void api_handler(struct evhttp_request * req, void *arg)
     while(1)
     {
         if(method_map_p->callback != NULL) {
-            if((ret=memcmp(call, method_map_p->method, strlen(call)) == 0))
+            if((ret=memcmp(method_map_p->method, call, strlen(call)) == 0))
             {
                 output = method_map_p->callback(req, &params);
                 break;
@@ -232,12 +298,30 @@ void generic_handler(struct evhttp_request * req, void *arg)
 
 int main(void)
 {
+	// process signal
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, exit_hook);
+    signal(SIGKILL, exit_hook);
+    signal(SIGQUIT, exit_hook);
+    signal(SIGTERM, exit_hook);
+    signal(SIGHUP, exit_hook);
+
+    //init python
+    Py_Initialize();
+    PyEval_InitThreads();
+    PyRun_SimpleString("import sys");
+    PyRun_SimpleString("sys.path.append('./')");
+    
+    //PyEval_ReleaseLock();
+    PyEval_ReleaseThread(PyThreadState_Get());
+    
+    //init xenserver api
     xmlInitParser();
     xmlKeepBlanksDefault(0);
     xen_init();
     curl_global_init(CURL_GLOBAL_ALL);
     
-    //parse server.conf
+    //parse config.json
     json_config_t * config = (json_config_t *)calloc(1, sizeof(json_config_t));
     parse_config(&config);
     
@@ -265,61 +349,6 @@ int main(void)
         }
     }
     
-    /*
-    //获取所有XenServer
-    xen_host_set *hosts = xen_host_set_alloc(20);
-    xen_host_get_all(session, &hosts);
-    
-    int hosts_size = hosts->size, i;
-    //查看每个XenServer
-    for(i=0; i<hosts_size; i++) {
-        xen_host_record *host_record = xen_host_record_alloc();
-        xen_host_get_record(session, &host_record, hosts->contents[i]);
-        fprintf(stderr, "XenServer: \n%s\n%s\n%s\n%s\n\n",host_record->uuid, host_record->name_label,
-                        host_record->name_description, host_record->address);
-        xen_host_record_free(host_record);
-        
-        //获取所有虚拟机
-        xen_vm_set * vms = xen_vm_set_alloc(100);
-        xen_vm_get_all(session, &vms);
-        
-        fprintf(stderr, "All vm: %d\n", (int)vms->size);
-        
-        int vm_size = vms->size, j;
-        //查看每台虚拟机
-        //并排除模板、快照、和管理域的虚拟机
-        for(j=0; j<vm_size; j++) {
-            xen_vm_record *vm_record = xen_vm_record_alloc();
-            xen_vm_get_record(session, &vm_record, vms->contents[j]);
-            
-            if(!vm_record->is_a_snapshot && !vm_record->is_a_template &&
-                !vm_record->is_control_domain && !vm_record->is_snapshot_from_vmpp)
-            {
-                fprintf(stderr, "%s\n%s\n\n",
-                        vm_record->uuid,
-                        vm_record->name_label);
-                
-            //获取主机的所有网卡
-            xen_vif_set *ifs = xen_vif_set_alloc(10);
-            xen_vm_get_vifs(session, &ifs, vms->contents[j]);
-            
-            int vif_size = ifs->size, k;
-            //查看每个网卡
-            for(k=0; k<vif_size; k++) {
-                xen_vif_record *vif_record = xen_vif_record_alloc();
-                xen_vif_get_record(session, &vif_record, ifs->contents[k]);
-                fprintf(stderr, "nic %s:\nread: %d\nwrite: %d\n",
-                        vif_record->device,
-                        vif_record->metrics->u.record->io_read_kbs,
-                        vif_record->metrics->u.record->io_write_kbs);
-            }
-            
-            //获取主机所有的磁盘
-            //xen_vm_get_vbds();
-            }
-        }
-    }
-    */
 
 	//start http server
 	int i, r, nfd;
@@ -355,6 +384,4 @@ int main(void)
     free_hmap(hashMap);
     return 0;
 }
-
-
 
