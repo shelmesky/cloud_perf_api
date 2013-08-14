@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include "common.h"
+#include "include/common.h"
 
 
 cJSON *json;

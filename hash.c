@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <semaphore.h>
-#include "common.h"
+#include "include/common.h"
 
 struct key_val_pair {
 	key k;

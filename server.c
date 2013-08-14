@@ -1,4 +1,4 @@
-#include "common.h"
+#include "include/common.h"
 
 #define DEBUG 0
 #define server_signature "nginx/0.7.69"

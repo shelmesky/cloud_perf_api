@@ -15,6 +15,7 @@
 #include "cJSON.h"
 #include "parse_json.h"
 #include "server.h"
+#include "utils.h"
 
 
 typedef struct
@@ -37,3 +38,4 @@ extern void *XenGetAllHost(xen_session *, xen_host_set **);
 extern void parse_config(json_config_t **);
 extern void parse_config_free(json_config_t *);
 extern char * PyCall(const char *, const char *, const char *, ... );
+extern times_before_t *get_before_now(void);
