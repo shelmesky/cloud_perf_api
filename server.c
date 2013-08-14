@@ -60,23 +60,112 @@ char * PyCall(const char * module, const char *func, const char *format, ... ) {
 }
 
 
+int head_data(void *ptr, size_t size, size_t nmemb, void *stream)
+{
+    char *pos;
+    char *length_str = "Content-Length: ";
+    pos = strstr(ptr, length_str);
+    if(pos) {
+        int length_str_len = (int)strlen(length_str);
+        int length_ptr = (int)strlen(ptr);
+        char content_length[128];
+        memcpy(content_length, ptr + length_str_len, length_ptr - length_str_len);
+        strip(content_length);
+        int length = atoi(content_length);
+        struct data_return *ret = (struct data_return *)stream;
+        ret->data = calloc(length, 1);
+    }
+    
+    return (int)size * nmemb;
+}
+
+
+int write_data(void *ptr, size_t size, size_t nmemb, void *stream)
+{
+    struct data_return *ret = (struct data_return *)stream;
+    int data_len = (int)strlen(ret->data);
+    memcpy(ret->data + data_len, ptr, (int)size * nmemb);
+    return (int)size * nmemb;
+}
+
+
 char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
 {
-   return NULL; 
+    char *output;
+    char host[1024];
+    char type[1024];
+    sprintf(host, "%s", evhttp_find_header(params, "host"));
+    sprintf(type, "%s", evhttp_find_header(params, "type"));
+    
+    size_t str_length = 0;
+    if((str_length = strlen(host)) == 0)
+    {
+        output = method_error("Parameter is empty: host");
+        return output;
+    }
+    if((str_length = strlen(type)) == 0)
+    {
+        output = method_error("Parameter is empty: type");
+        return output;
+    }
+    
+    xen_session * host_session;
+    //从hash table中根据hostname获取session
+    host_session = (xen_session *)hmap_get(hashMap, (void *)host);
+    if(host_session == NULL) {
+        output = method_error("Can not find host");
+        return output;
+    }
+    
+    char *start;
+    times_before_t *before = get_before_now();
+    if(type == "10m") {
+        start = before->ten_minutes_ago;
+    }
+    else if(type == "2h") {
+        start = before->two_hours_ago;
+    }
+    else if(type == "1w") {
+        start = before->one_week_ago;
+    }
+    else if(type == "1y") {
+        start = before->one_year_ago;
+    }
+    else {
+        start = before->ten_minutes_ago;
+    }
+    
+    char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
+    char url[1024];
+    sprintf(url, url_format, host, host_session->session_id, start);
+    
+    struct data_return data_return_p[1];
+    CURL *curl;
+    curl_global_init(CURL_GLOBAL_ALL);
+    curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, head_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEHEADER, &data_return_p);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data_return_p);
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+    CURLcode result = curl_easy_perform(curl);
+    
+    // start executer python script
+    PyGILState_STATE state;
+    state = PyGILState_Ensure();
+    
+    char * ret = PyCall(converter_module, converter_func, "(s)", data_return_p->data);
+    
+    PyGILState_Release(state);
+    // end execute python
+    
+    curl_easy_cleanup(curl);
 }
 
 
 char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
 {
-    // start executer python script
-    PyGILState_STATE state;
-    state = PyGILState_Ensure();
-    
-    char * ret = PyCall(converter_module, converter_func, "(s)", "hahaha");
-    
-    PyGILState_Release(state);
-    // end execute python
-    
     char *output;
     char uuid[1024];
     char host[1024];
@@ -117,7 +206,6 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
     cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
-    cJSON_AddItemToObject(json_root, "pyret", cJSON_CreateString(ret));
     
     cJSON_AddStringToObject(json_data, "uuid", vm_record->uuid);
     cJSON_AddStringToObject(json_data, "name_label", vm_record->name_label);

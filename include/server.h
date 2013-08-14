@@ -1,4 +1,8 @@
 
+struct data_return {
+    char *data;
+};
+
 int bind_socket(int);
 void *dispatch(void *);
 void api_handler(struct evhttp_request *, void *);

@@ -3,5 +3,6 @@
 # This function receive string arg
 # and return string
 def converter(arg):
-	print "......."
+	print "recevie data: "
+	print arg
 	return arg
