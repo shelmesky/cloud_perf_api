@@ -28,7 +28,7 @@ void exit_hook(int number) {
 }
 
 
-char * PyCall(const char * module, const char *func, const char *format, ... ) {
+PyObject * PyCall(const char * module, const char *func, const char *format, ... ) {
     PyObject *pModule = NULL;
     PyObject *pFunc = NULL;
     PyObject *pParm = NULL;
@@ -45,9 +45,10 @@ char * PyCall(const char * module, const char *func, const char *format, ... ) {
 
             pRetVal = PyEval_CallObject(pFunc, pParm);
 
-            char *ret;
-            PyArg_Parse(pRetVal, "s", &ret);
-            return ret;
+            return pRetVal;
+            //char *ret;
+            //PyArg_Parse(pRetVal, "s", &ret);
+            //return ret;
         }
         else {
             printf("import function error\n");
@@ -117,6 +118,7 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
         return output;
     }
     
+    //根据type参数的类型，获取对应的开始时间
     char *start;
     times_before_t *before = get_before_now();
     if(type == "10m") {
@@ -135,6 +137,7 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
         start = before->ten_minutes_ago;
     }
     
+    //使用libcurl调用XenServer API
     char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
     char url[1024];
     sprintf(url, url_format, host, host_session->session_id, start);
@@ -154,13 +157,72 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     // start executer python script
     PyGILState_STATE state;
     state = PyGILState_Ensure();
+    PyObject *ret;
+    PyObject *item, *item2, *uuid, *data;
+    PyObject *key, *value;
     
-    char * ret = PyCall(converter_module, converter_func, "(s)", data_return_p->data);
+    //调用python,返回列表类型
+    ret = PyCall(converter_module, converter_func, "(s)", data_return_p->data);
+    Py_ssize_t ret_size = PyList_GET_SIZE(ret);
+    int i;
+    //获取最外层列表的元素
+    //每个元素是字段，{uuid: "string", data: {}}
+    for(i=0; i<ret_size; i++) {
+        item = PyList_GetItem(ret, i);
+        uuid = PyDict_GetItemString(item, "uuid");
+        data = PyDict_GetItem(item, PyString_FromString("data"));
+        
+        Py_ssize_t pos = 0;
+        char *uuid_str = PyString_AsString(uuid);
+        
+        fprintf(stderr, "\n%s\n", uuid_str);
+        //循环获取data字典的内容
+        //每个元素的内容是{"cpu0": [{"12:00:00": 123}, {}, ...]}
+        while(PyDict_Next(data, (Py_ssize_t *)&pos, &key, &value)) {
+            char * k = PyString_AsString(key);
+            fprintf(stderr, "\n%s\n", k);
+            
+            //得到最内层的列表
+            //之所以用列表是为了保持顺序
+            //因为python的字典是无序的
+            Py_ssize_t data_list_size = PyList_GET_SIZE(value);
+            
+            int j;
+            //循环列表里的每个元素
+            //元素是仅为单个key:value的字典
+            for(j=0; j<data_list_size; j++) {
+                //item2为列表中的每个字典元素
+                item2 = PyList_GetItem(value, j);
+                
+                PyObject *key1, *value1;
+                Py_ssize_t pos1 = 0;
+                //获取字典的key和value
+                while(PyDict_Next(item2, (Py_ssize_t *)&pos1, &key1, &value1)) {
+                    char *key1_str = PyString_AsString(key1);
+                    char *value1_str = PyString_AsString(value1);
+                    fprintf(stderr, "%s: %s\n", key1_str, value1_str);
+                }
+            }
+        }
+    }
     
     PyGILState_Release(state);
     // end execute python
     
+    cJSON *json_root, *json_data, *json_vms, *single_vm;
+    //createobject是在堆上分配的内存
+    json_root = cJSON_CreateObject();
+    cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
+    cJSON_AddStringToObject(json_root, "session_id", session->session_id);
+    cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
+    //cJSON_AddStringToObject(json_root, "data", uuid);
+    
+    output = cJSON_PrintUnformatted(json_root);
+    
+    cJSON_Delete(json_root);
     curl_easy_cleanup(curl);
+    
+    return output;
 }
 
 

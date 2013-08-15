@@ -3,3 +3,6 @@ python:
 
 time:
 	gcc -o itime time.c
+
+mongo:
+	gcc -o mg mongo.c -lmongoc --std=c99
