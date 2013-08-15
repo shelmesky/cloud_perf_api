@@ -9,4 +9,4 @@ LDFLAGS = -g $(shell xml2-config --libs) \
 	  -Wl,-rpath,$(shell pwd)
 
 all:
-	gcc -O0 -o server server.c hash.c virt.c xen.c cJSON.c parse_json.c utils.c -lpthread -lvirt -lxenserver -levent -lpython2.7 $(CFLAGS) $(LDFLAGS)
+	gcc -O0 -o server server.c hash.c virt.c xen.c cJSON.c parse_json.c utils.c mongoc.c -lpthread -lvirt -lxenserver -levent -lpython2.7 -lmongoc $(CFLAGS) $(LDFLAGS)

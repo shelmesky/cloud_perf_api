@@ -8,6 +8,7 @@ int nthreads = 100;
 char *converter_module = NULL;
 char *converter_func = NULL;
 
+mongo *mongo_conn;
 xen_session *session;
 hashmap *hashMap;
 
@@ -168,6 +169,10 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     //获取最外层列表的元素
     //每个元素是字段，{uuid: "string", data: {}}
     for(i=0; i<ret_size; i++) {
+        bson b[1];
+        bson_init(b);
+        bson_append_new_oid(b, "_id");
+        
         item = PyList_GetItem(ret, i);
         uuid = PyDict_GetItemString(item, "uuid");
         data = PyDict_GetItem(item, PyString_FromString("data"));
@@ -175,12 +180,16 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
         Py_ssize_t pos = 0;
         char *uuid_str = PyString_AsString(uuid);
         
-        fprintf(stderr, "\n%s\n", uuid_str);
+        bson_append_string(b, "uuid", uuid_str);
+        bson_append_start_object(b, "data");
+        
+        //fprintf(stderr, "\n%s\n", uuid_str);
         //循环获取data字典的内容
         //每个元素的内容是{"cpu0": [{"12:00:00": 123}, {}, ...]}
         while(PyDict_Next(data, (Py_ssize_t *)&pos, &key, &value)) {
             char * k = PyString_AsString(key);
-            fprintf(stderr, "\n%s\n", k);
+            //fprintf(stderr, "\n%s\n", k);
+            bson_append_start_array(b, k);
             
             //得到最内层的列表
             //之所以用列表是为了保持顺序
@@ -191,6 +200,10 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
             //循环列表里的每个元素
             //元素是仅为单个key:value的字典
             for(j=0; j<data_list_size; j++) {
+                char num[256];
+                sprintf(num, "%d", j);
+                bson_append_start_object(b, num);
+                
                 //item2为列表中的每个字典元素
                 item2 = PyList_GetItem(value, j);
                 
@@ -200,9 +213,40 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
                 while(PyDict_Next(item2, (Py_ssize_t *)&pos1, &key1, &value1)) {
                     char *key1_str = PyString_AsString(key1);
                     char *value1_str = PyString_AsString(value1);
-                    fprintf(stderr, "%s: %s\n", key1_str, value1_str);
+                    //fprintf(stderr, "%s: %s\n", key1_str, value1_str);
+                    bson_append_string(b, key1_str, value1_str);
                 }
+                bson_append_finish_object(b);
             }
+            
+            bson_append_finish_object(b);
+        }
+        
+        bson_append_finish_object(b);
+        bson_finish(b);
+        
+        bson query[1];
+        mongo_cursor cursor[1];
+        bson_init(query);
+        bson_append_string(query, "uuid", uuid_str);
+        bson_finish(query);
+        
+        int mg_ret = 0;
+        mongo_cursor_init(cursor, mongo_conn, "wisemonitor.virtual_host");
+        mongo_cursor_set_query(cursor, query);
+        while(mongo_cursor_next(cursor) == MONGO_OK) {
+            mg_ret = 1;
+        }
+        if(mg_ret == 0) {
+            //insert data to MongoDB
+            if(mongo_insert(mongo_conn, "wisemonitor.virtual_host", b, NULL) != MONGO_OK) {
+                fprintf(stderr, "FAIL: Failed to insert document whth err: %d\n", mongo_conn->err);
+            }
+        }
+        else {
+            // update
+            //mongo_update();
+            fprintf(stderr, "重复数据\n");
         }
     }
     
@@ -466,6 +510,15 @@ int main(void)
     signal(SIGQUIT, exit_hook);
     signal(SIGTERM, exit_hook);
     signal(SIGHUP, exit_hook);
+    
+    //Connect to MongoDB
+    mongo conn[1];
+    mongo_conn = conn;
+    int result;
+    MongoConnect(&mongo_conn, "127.0.0.1", 27017, &result);
+    if(result != 0) {
+        fprintf(stderr, "Failed connect to MongoDB!\n");
+    }
 
     //init python
     Py_Initialize();

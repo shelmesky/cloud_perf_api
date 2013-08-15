@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <python2.7/Python.h>
+#include <mongo.h>
 #include "virt.h"
 #include "hash.h"
 #include "xen.h"
@@ -40,3 +41,4 @@ extern void parse_config_free(json_config_t *);
 extern PyObject * PyCall(const char *, const char *, const char *, ... );
 extern times_before_t *get_before_now(void);
 extern void strip(char *);
+extern void *MongoConnect(mongo **, const char *, const int, int *);
