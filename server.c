@@ -120,18 +120,19 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     }
     
     //根据type参数的类型，获取对应的开始时间
+    int cmp_ret;
     char *start;
     times_before_t *before = get_before_now();
-    if(type == "10m") {
+    if((cmp_ret=memcmp(type, "10m", strlen("10m"))) == 0) {
         start = before->ten_minutes_ago;
     }
-    else if(type == "2h") {
+    else if((cmp_ret=memcmp(type, "2h", strlen("2h"))) == 0) {
         start = before->two_hours_ago;
     }
-    else if(type == "1w") {
+    else if((cmp_ret=memcmp(type, "1w", strlen("1w"))) == 0) {
         start = before->one_week_ago;
     }
-    else if(type == "1y") {
+    else if((cmp_ret=memcmp(type, "1y", strlen("1y"))) == 0) {
         start = before->one_year_ago;
     }
     else {

@@ -12,3 +12,5 @@ char *get_vm_list(struct evhttp_request *, struct evkeyvalq *);
 char *get_perf(struct evhttp_request *, struct evkeyvalq *);
 char *method_notfound(void);
 char *method_error(const char *);
+int head_data(void *ptr, size_t size, size_t nmemb, void *stream);
+int write_data(void *ptr, size_t size, size_t nmemb, void *stream);
