@@ -523,6 +523,7 @@ void api_handler(struct evhttp_request * req, void *arg)
     evbuffer_add_printf(buf, "%s", output);
     evhttp_add_header(req->output_headers, "Server", server_signature);
     evhttp_add_header(req->output_headers, "Content-Type", "application/json; charset=UTF-8");
+    evhttp_add_header(req->output_headers, "Access-Control-Allow-Origin", "*");
     evhttp_send_reply(req, HTTP_OK, "OK", buf);
     evbuffer_free(buf);
 }
