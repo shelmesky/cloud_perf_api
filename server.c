@@ -162,15 +162,21 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     PyObject *ret;
     PyObject *item, *item2, *uuid, *data;
     PyObject *key, *value;
+    PyObject *original_list, *dump_list;
     
     //调用python,返回列表类型
     ret = PyCall(converter_module, converter_func, "(s)", data_return_p->data);
-    Py_ssize_t ret_size = PyList_GET_SIZE(ret);
+    original_list = PyList_GetItem(ret, 0);
+    dump_list = PyList_GetItem(ret, 1);
+    char * dumps_json = PyString_AsString(dump_list);
+    //fprintf(stderr, "%s\n", dumps_json);
+    
+    Py_ssize_t ret_size = PyList_GET_SIZE(original_list);
     int i;
     //获取最外层列表的元素
     //每个元素是字段，{uuid: "string", data: {}}
     for(i=0; i<ret_size; i++) {
-        item = PyList_GetItem(ret, i);
+        item = PyList_GetItem(original_list, i);
         uuid = PyDict_GetItemString(item, "uuid");
         data = PyDict_GetItem(item, PyString_FromString("data"));
         
@@ -290,7 +296,7 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
-    //cJSON_AddStringToObject(json_root, "data", uuid);
+    cJSON_AddStringToObject(json_root, "data", dumps_json);
     
     output = cJSON_PrintUnformatted(json_root);
     
