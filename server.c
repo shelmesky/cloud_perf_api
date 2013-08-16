@@ -170,10 +170,6 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     //获取最外层列表的元素
     //每个元素是字段，{uuid: "string", data: {}}
     for(i=0; i<ret_size; i++) {
-        bson b[1];
-        bson_init(b);
-        bson_append_new_oid(b, "_id");
-        
         item = PyList_GetItem(ret, i);
         uuid = PyDict_GetItemString(item, "uuid");
         data = PyDict_GetItem(item, PyString_FromString("data"));
@@ -181,6 +177,27 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
         Py_ssize_t pos = 0;
         char *uuid_str = PyString_AsString(uuid);
         
+        //查询DB中是否有uuid的记录
+        //如果有插入新记录包含_oid
+        //否则不包含
+        //因为MongoDB不允许更新oid
+        bson query[1];
+        bson_init(query);
+        bson_append_string(query, "uuid", uuid_str);
+        bson_finish(query);
+        int mg_ret = mongo_find_one(mongo_conn,
+                                    "wisemonitor.virtual_host",
+                                    query,
+                                    bson_shared_empty(),
+                                    NULL);
+        
+        bson b[1];
+        bson_init(b);
+        if(mg_ret != 0) {
+            //如果uuid的记录不存在，则插入_oid
+            bson_append_new_oid(b, "_id");
+        }
+        bson_append_string(b, "time_stamp", before->now);
         bson_append_string(b, "uuid", uuid_str);
         bson_append_start_object(b, "data");
         
@@ -226,29 +243,42 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
         bson_append_finish_object(b);
         bson_finish(b);
         
-        bson query[1];
-        mongo_cursor cursor[1];
-        bson_init(query);
-        bson_append_string(query, "uuid", uuid_str);
-        bson_finish(query);
-        
-        int mg_ret = 0;
-        mongo_cursor_init(cursor, mongo_conn, "wisemonitor.virtual_host");
-        mongo_cursor_set_query(cursor, query);
-        while(mongo_cursor_next(cursor) == MONGO_OK) {
-            mg_ret = 1;
-        }
-        if(mg_ret == 0) {
+        if(mg_ret != MONGO_OK) {
             //insert data to MongoDB
             if(mongo_insert(mongo_conn, "wisemonitor.virtual_host", b, NULL) != MONGO_OK) {
-                fprintf(stderr, "FAIL: Failed to insert document whth err: %d\n", mongo_conn->err);
+                fprintf(stderr, "FAIL: Failed to insert document whth err: %s\n", mongo_conn->lasterrstr);
             }
         }
         else {
             // update
-            //mongo_update();
-            fprintf(stderr, "重复数据\n");
+            bson cond[1];
+            bson_init(cond);
+            bson_append_string(cond, "uuid", uuid_str);
+            bson_finish(cond);
+            
+            bson op[1];
+            bson_init(op);
+            bson_append_bson(op, "$set", b);
+            bson_finish(op);
+            
+            int update_ret = mongo_update(mongo_conn,
+                         "wisemonitor.virtual_host",
+                         cond,
+                         op,
+                         MONGO_UPDATE_MULTI,
+                         0);
+            if (update_ret == MONGO_OK) {
+                fprintf(stderr, "Record Updated Finished!\n");
+            }
+            else {
+                fprintf(stderr, "%s\nRecord Updated Error!\n", mongo_conn->lasterrstr);
+            }
+            bson_destroy(cond);
+            bson_destroy(op);
         }
+        
+        bson_destroy(query);
+        bson_destroy(b);
     }
     
     PyGILState_Release(state);
