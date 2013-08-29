@@ -419,7 +419,7 @@ char * get_vm_list(struct evhttp_request *req,
     xen_pif_record *pif_record = xen_pif_record_alloc();
     xen_pif_get_record(host_session, &pif_record, pifs->contents[0]);
     
-    xen_host_metrics *metrics = xen_host_metrics_set_alloc(16);
+    xen_host_metrics metrics;
     xen_host_metrics_record *metrics_record = xen_host_metrics_record_alloc();
     xen_host_get_metrics(host_session, &metrics, hosts->contents[0]);
     xen_host_metrics_get_record(host_session, &metrics_record, metrics);
@@ -452,6 +452,9 @@ char * get_vm_list(struct evhttp_request *req,
     //并排除模板、快照、和管理域的虚拟机
     for(j=0; j<vm_size; j++) {
         xen_vm_get_record(host_session, &vm_record, vms->contents[j]);
+        
+        //xen_vm_metrics_set *vm_metrics_set = xen_vm_metrics_set_alloc(128);
+        //xen_vm_metrics_get_all(host_session, &vm_metrics_set);
         
         if(!vm_record->is_a_snapshot && !vm_record->is_a_template &&
             !vm_record->is_control_domain && !vm_record->is_snapshot_from_vmpp)
