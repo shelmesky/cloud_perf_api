@@ -296,7 +296,7 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
-    cJSON_AddStringToObject(json_root, "data", dumps_json);
+    cJSON_AddStringToObject(json_root, "objects", dumps_json);
     
     output = cJSON_PrintUnformatted(json_root);
     
@@ -348,7 +348,7 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
-    cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
+    cJSON_AddItemToObject(json_root, "objects", json_data=cJSON_CreateObject());
     
     cJSON_AddStringToObject(json_data, "uuid", vm_record->uuid);
     cJSON_AddStringToObject(json_data, "name_label", vm_record->name_label);
@@ -392,7 +392,7 @@ char * get_vm_list(struct evhttp_request *req,
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
-    cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
+    cJSON_AddItemToObject(json_root, "objects", json_data=cJSON_CreateObject());
     
     // start get XenServer Host configuration
     xen_host_set *hosts = xen_host_set_alloc(2);
