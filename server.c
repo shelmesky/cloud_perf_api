@@ -451,19 +451,28 @@ char * get_vm_list(struct evhttp_request *req,
     //查看每台虚拟机
     //并排除模板、快照、和管理域的虚拟机
     for(j=0; j<vm_size; j++) {
-        xen_vm_get_record(host_session, &vm_record, vms->contents[j]);
+        bool ret_g = xen_vm_get_record(host_session, &vm_record, vms->contents[j]);
         
-        //xen_vm_metrics_set *vm_metrics_set = xen_vm_metrics_set_alloc(128);
-        //xen_vm_metrics_get_all(host_session, &vm_metrics_set);
-        
-        if(!vm_record->is_a_snapshot && !vm_record->is_a_template &&
-            !vm_record->is_control_domain && !vm_record->is_snapshot_from_vmpp)
-        {
-            single_vm = cJSON_CreateObject();
-            cJSON_AddItemToArray(json_vms, single_vm);
-            cJSON_AddStringToObject(single_vm, "uuid", vm_record->uuid);
-            cJSON_AddStringToObject(single_vm, "name_label", vm_record->name_label);
-            running_vm_size++;
+        if(ret_g) {
+            if(!vm_record->is_a_snapshot && !vm_record->is_a_template &&
+                !vm_record->is_control_domain && !vm_record->is_snapshot_from_vmpp)
+            {
+                xen_vm_guest_metrics vm_m;
+                xen_vm_get_guest_metrics(host_session, &vm_m, vms->contents[j]);
+                xen_vm_guest_metrics_record *vm_r = xen_vm_guest_metrics_record_alloc();
+                bool ret_r = xen_vm_guest_metrics_get_record(host_session, &vm_r, vm_m);
+                
+                if(ret_r) {
+                    char *ip = vm_r->networks->contents[0].val;
+                
+                    single_vm = cJSON_CreateObject();
+                    cJSON_AddItemToArray(json_vms, single_vm);
+                    cJSON_AddStringToObject(single_vm, "uuid", vm_record->uuid);
+                    cJSON_AddStringToObject(single_vm, "name_label", vm_record->name_label);
+                    cJSON_AddStringToObject(single_vm, "ip", ip);
+                    running_vm_size++;
+                }
+            }
         }
     }
     
