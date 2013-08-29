@@ -576,6 +576,9 @@ void api_handler(struct evhttp_request * req, void *arg)
     evhttp_add_header(req->output_headers, "Server", server_signature);
     evhttp_add_header(req->output_headers, "Content-Type", "application/json; charset=UTF-8");
     evhttp_add_header(req->output_headers, "Access-Control-Allow-Origin", "*");
+    evhttp_add_header(req->output_headers, "Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    evhttp_add_header(req->output_headers, "Access-Control-Allow-Headers", "X-Requested-With");
+    evhttp_add_header(req->output_headers, "Access-Control-Max-Age", "86400");
     evhttp_send_reply(req, HTTP_OK, "OK", buf);
     evbuffer_free(buf);
 }
@@ -675,6 +678,15 @@ int main(void)
 		r = evhttp_accept_socket(httpd, nfd);
 		if(r != 0) return -1;
 
+        evhttp_set_allowed_methods(httpd,
+                                   EVHTTP_REQ_GET|
+                                  EVHTTP_REQ_POST|
+                                  EVHTTP_REQ_PUT|
+                                  EVHTTP_REQ_DELETE|
+                                  EVHTTP_REQ_HEAD|
+                                  EVHTTP_REQ_OPTIONS|
+                                  EVHTTP_REQ_CONNECT);
+        
         evhttp_set_gencb(httpd, generic_handler, NULL);
         evhttp_set_cb(httpd, "/api", api_handler, NULL);
         evhttp_set_timeout(httpd, 3000);
