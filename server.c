@@ -318,12 +318,12 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     size_t str_length = 0;
     if((str_length = strlen(host)) == 0)
     {
-        fprintf(stderr, "Can not find host parameter");
+        fprintf(stderr, "Can not find host parameter\n");
         return NULL;
     }
     if((str_length = strlen(uuid)) == 0)
     {
-        fprintf(stderr, "Can not find host parameter");
+        fprintf(stderr, "Can not find host parameter\n");
         return NULL;
     }
     
@@ -374,7 +374,7 @@ char * get_vm_list(struct evhttp_request *req,
     size_t str_length = 0;
     if((str_length = strlen(host)) == 0)
     {
-        fprintf(stderr, "Can not find host parameter");
+        fprintf(stderr, "Can not find host parameter\n");
         return NULL;
     }
     
