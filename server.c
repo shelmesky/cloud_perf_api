@@ -385,6 +385,7 @@ char * get_vm_list(struct evhttp_request *req,
         return output;
     }
     
+    
     cJSON *json_root, *json_data, *json_vms, *single_vm;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
@@ -392,6 +393,47 @@ char * get_vm_list(struct evhttp_request *req,
     cJSON_AddStringToObject(json_root, "session_id", session->session_id);
     cJSON_AddItemToObject(json_root, "message", cJSON_CreateString("ok"));
     cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
+    
+    // start get XenServer Host configuration
+    xen_host_set *hosts = xen_host_set_alloc(2);
+    xen_host_get_all(host_session, &hosts);
+    
+    //get name and ip address
+    xen_host_record *host_record = xen_host_record_alloc();
+    xen_host_get_record(host_session, &host_record, hosts->contents[0]);
+    
+    //get cpu_count
+    xen_string_string_map *cpu_info = xen_string_string_map_alloc(128);
+    xen_host_get_cpu_info(host_session, &cpu_info, hosts->contents[0]);
+    
+    //get cpu model
+    xen_host_cpu_set *host_cpu = xen_host_cpu_set_alloc(128);
+    xen_host_get_host_cpus(host_session, &host_cpu, hosts->contents[0]);
+    xen_host_cpu_record *cpu_record = xen_host_cpu_record_alloc();
+    xen_host_cpu_get_record(host_session, &cpu_record, host_cpu->contents[0]);
+    
+    //get physical NIC
+    //more than 1 NIC, get info in a loop
+    xen_pif_set *pifs = xen_pif_set_alloc(8);
+    xen_host_get_pifs(host_session, &pifs, hosts->contents[0]);
+    xen_pif_record *pif_record = xen_pif_record_alloc();
+    xen_pif_get_record(host_session, &pif_record, pifs->contents[0]);
+    
+    xen_host_metrics *metrics = xen_host_metrics_set_alloc(16);
+    xen_host_metrics_record *metrics_record = xen_host_metrics_record_alloc();
+    xen_host_get_metrics(host_session, &metrics, hosts->contents[0]);
+    xen_host_metrics_get_record(host_session, &metrics_record, metrics);
+    // end get XenServer configuration
+    
+    cJSON_AddStringToObject(json_data, "name", host_record->hostname);
+    cJSON_AddStringToObject(json_data, "ip", host_record->address);
+    cJSON_AddStringToObject(json_data, "edition", host_record->edition);
+    
+    cJSON_AddStringToObject(json_data, "cpu_count", cpu_info->contents[0].val);
+    cJSON_AddStringToObject(json_data, "cpu_modelname", cpu_record->modelname);
+    
+    cJSON_AddNumberToObject(json_data, "memory_total", metrics_record->memory_total/1024/1024);
+    cJSON_AddNumberToObject(json_data, "memory_free", metrics_record->memory_free/1024/1024);
     
     xen_vm_set * vms = xen_vm_set_alloc(100);
     xen_vm_record *vm_record = xen_vm_record_alloc();
@@ -429,6 +471,16 @@ char * get_vm_list(struct evhttp_request *req,
     cJSON_Delete(json_root);
     xen_vm_record_free(vm_record);
     xen_vm_set_free(vms);
+    
+    xen_host_set_free(hosts);
+    xen_host_record_free(host_record);
+    xen_string_string_map_free(cpu_info);
+    xen_host_cpu_set_free(host_cpu);
+    xen_host_cpu_record_free(cpu_record);
+    xen_pif_set_free(pifs);
+    xen_pif_record_free(pif_record);
+    xen_host_metrics_free(metrics);
+    xen_host_metrics_record_free(metrics_record);
     
     return output;
 }
