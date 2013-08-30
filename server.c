@@ -238,7 +238,8 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
                     char *key1_str = PyString_AsString(key1);
                     char *value1_str = PyString_AsString(value1);
                     //fprintf(stderr, "%s: %s\n", key1_str, value1_str);
-                    bson_append_string(b, key1_str, value1_str);
+                    bson_append_string(b, "time", key1_str);
+                    bson_append_string(b, "data", value1_str);
                 }
                 bson_append_finish_object(b);
             }

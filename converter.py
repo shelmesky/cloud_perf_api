@@ -186,7 +186,8 @@ def get_vm_data(rrd_updates, uuid):
                     max_time = epoch
                     data = dv
                 nt = time.strftime("%H:%M:%S", time.localtime(max_time))
-                temp1[nt] = data
+                temp1["time"] = nt
+                temp1["data"] = data
                 temp[param].append(temp1)
                 #temp[param][nt] = data
     return main
