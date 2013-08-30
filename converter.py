@@ -201,5 +201,6 @@ def converter(arg):
 	obj.load(arg)
 	for uuid in obj.get_vm_list():
 		ret.append(get_vm_data(obj, uuid))
+		break
 	return [ret, json.dumps(ret)]
 

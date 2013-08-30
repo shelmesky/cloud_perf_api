@@ -231,16 +231,22 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
                 //item2为列表中的每个字典元素
                 item2 = PyList_GetItem(value, j);
                 
+                //get value of key 'time' and 'data' in Dict: item2
                 PyObject *key1, *value1;
                 Py_ssize_t pos1 = 0;
+                PyObject *time_val = PyDict_GetItemString(item2, "time");
+                PyObject *data_val = PyDict_GetItemString(item2 ,"data");
+                char *time_val_str = PyString_AsString(time_val);
+                char *data_val_str = PyString_AsString(data_val);
+                bson_append_string(b, "time", time_val_str);
+                bson_append_string(b, "data", data_val_str);
+                
                 //获取字典的key和value
-                while(PyDict_Next(item2, (Py_ssize_t *)&pos1, &key1, &value1)) {
-                    char *key1_str = PyString_AsString(key1);
-                    char *value1_str = PyString_AsString(value1);
-                    //fprintf(stderr, "%s: %s\n", key1_str, value1_str);
-                    bson_append_string(b, "time", key1_str);
-                    bson_append_string(b, "data", value1_str);
-                }
+//                 while(PyDict_Next(item2, (Py_ssize_t *)&pos1, &key1, &value1)) {
+//                     char *key1_str = PyString_AsString(key1);
+//                     char *value1_str = PyString_AsString(value1);
+//                     //fprintf(stderr, "%s: %s\n", key1_str, value1_str);
+//                 }
                 bson_append_finish_object(b);
             }
             
