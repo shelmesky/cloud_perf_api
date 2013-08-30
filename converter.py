@@ -187,7 +187,13 @@ def get_vm_data(rrd_updates, uuid):
                     data = dv
                 nt = time.strftime("%H:%M:%S", time.localtime(max_time))
                 temp1["time"] = nt
-                temp1["data"] = data
+                try:
+                    if "cpu" in param:
+                        temp1["data"] = int(float(data) * 1000)
+                    else:
+                        temp1["data"] = int(float(data))
+                except Exception:
+                    temp1["data"] = 0
                 temp[param].append(temp1)
                 #temp[param][nt] = data
     return main
