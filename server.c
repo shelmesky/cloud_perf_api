@@ -297,7 +297,7 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     PyGILState_Release(state);
     // end execute python
     
-    cJSON *json_root, *json_data, *json_vms, *single_vm;
+    cJSON *json_root, *json_data;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
