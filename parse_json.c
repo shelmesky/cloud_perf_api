@@ -49,7 +49,7 @@ json_config_t * parse_config_json(void)
             xen_config->hosts[i].hostname = host->valuestring;
             xen_config->hosts[i].username = username->valuestring;
             xen_config->hosts[i].password = password->valuestring;
-            xen_config->size = i;
+            xen_config->size += 1;
             i++;
         }
         

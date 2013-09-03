@@ -14,3 +14,7 @@ char *method_notfound(void);
 char *method_error(const char *);
 int head_data(void *ptr, size_t size, size_t nmemb, void *stream);
 int write_data(void *ptr, size_t size, size_t nmemb, void *stream);
+void *periodical_10m(void *);
+void *periodical_2h(void *);
+void *periodical_1w(void *);
+void *periodical_1y(void *);

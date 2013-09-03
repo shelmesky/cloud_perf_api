@@ -11,6 +11,8 @@ char *converter_func = NULL;
 mongo *mongo_conn;
 xen_session *session;
 hashmap *hashMap;
+//用于保存配置文件
+json_config_t *global_config = NULL;
 
 void exit_hook(int);
 
@@ -59,6 +61,36 @@ PyObject * PyCall(const char * module, const char *func, const char *format, ...
         printf("import module error\n");
     }
     return NULL;
+}
+
+
+void *periodical_10m(void *args) {
+    if(global_config->all_servers != NULL) {
+        all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
+        //恢复指针自加前的地址
+        xen_hosts->hosts -= xen_hosts->size;
+        while(xen_hosts->hosts->hostname != NULL) {
+            char *hostname_ori = xen_hosts->hosts->hostname;
+            fprintf(stderr, "%s\n", hostname_ori);
+            xen_hosts->hosts++;
+        }
+   }
+   return NULL;
+}
+
+
+void *periodical_2h(void *args) {
+   return NULL;
+}
+
+
+void *periodical_1w(void *args) {
+   return NULL;
+}
+
+
+void *periodical_1y(void *args) {
+   return NULL;
 }
 
 
@@ -650,6 +682,8 @@ int main(void)
     //parse config.json
     json_config_t * config = (json_config_t *)calloc(1, sizeof(json_config_t));
     parse_config(&config);
+    //global_config = &(((all_host_t *)config->all_servers)->hosts);
+    global_config = config;
     
     // set converter module and func
     converter_module = config->convert_module;
@@ -678,6 +712,21 @@ int main(void)
             xen_hosts->hosts++;
         }
     }
+    
+    //start periodical threads
+    int thread_ret;
+    pthread_t periodical_t[4];
+    thread_ret = pthread_create(&periodical_t[0], NULL, periodical_10m, NULL);
+    if(0 != thread_ret) return -1;
+    
+    thread_ret = pthread_create(&periodical_t[1], NULL, periodical_2h, NULL);
+    if(0 != thread_ret) return -1;
+    
+    thread_ret = pthread_create(&periodical_t[2], NULL, periodical_1w, NULL);
+    if(0 != thread_ret) return -1;
+    
+    thread_ret = pthread_create(&periodical_t[3], NULL, periodical_1y, NULL);
+    if(0 != thread_ret) return -1;
     
 
 	//start http server
