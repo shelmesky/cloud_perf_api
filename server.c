@@ -40,35 +40,43 @@ PyObject * PyCall(const char * module, const char *func, const char *format, ...
     PyObject *pParm = NULL;
     PyObject *pRetVal = NULL;
 
+    //pyimport_importmodule return new ref
     pModule = PyImport_ImportModule(module);
     if(pModule != NULL) {
+        //pyobject_getattrstring return new ref
         pFunc = PyObject_GetAttrString(pModule, func);
         if(pFunc != NULL) {
             va_list vargs;
             va_start(vargs, format);
+            //py_vabuildvalue return new ref
             pParm = Py_VaBuildValue(format, vargs);
             va_end(vargs);
 
             pRetVal = PyEval_CallObject(pFunc, pParm);
             if(NULL != pRetVal) {
+                Py_DecRef(pParm);
+                Py_DecRef(pFunc);
+                Py_DecRef(pModule);
                 return pRetVal;
             } else {
                 PyErr_Print(); 
                 fprintf(stderr, "Error occured while executer Python!\n");
-                return (PyObject *)NULL;
             }
         }
         else {
             PyErr_Print(); 
             fprintf(stderr, "import function error\n");
-            return (PyObject *)NULL;
         }
     }
     else { 
         PyErr_Print(); 
         fprintf(stderr, "import module error\n");
-        return (PyObject *)NULL;
     }
+    
+    Py_DecRef(pParm);
+    Py_DecRef(pFunc);
+    Py_DecRef(pModule);
+    return (PyObject *)NULL;
 }
 
 

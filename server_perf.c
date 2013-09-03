@@ -35,8 +35,10 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     
     //调用python,返回列表类型
     ret = PyCall(converter_module, converter_func, "(s)", data_return_p->data);
+    //pylist_getitem return borrowed ref
     original_list = PyList_GetItem(ret, 0);
     dump_list = PyList_GetItem(ret, 1);
+    //pystring_asstring return borrowed ref
     char * dumps_json = PyString_AsString(dump_list);
     //fprintf(stderr, "%s\n", dumps_json);
     
@@ -46,10 +48,12 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     //每个元素是字段，{uuid: "string", data: {}}
     for(i=0; i<ret_size; i++) {
         item = PyList_GetItem(original_list, i);
+        //pydict_getitem return borrowed ref
         uuid = PyDict_GetItemString(item, "uuid");
         data = PyDict_GetItem(item, PyString_FromString("data"));
         
         Py_ssize_t pos = 0;
+        //pystring_asstring return borrowed ref
         char *uuid_str = PyString_AsString(uuid);
         
         //查询DB中是否有uuid的记录
@@ -80,6 +84,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
         //fprintf(stderr, "\n%s\n", uuid_str);
         //循环获取data字典的内容
         //每个元素的内容是{"cpu0": [{"12:00:00": 123}, {}, ...]}
+        //pydict_next return borrowed ref
         while(PyDict_Next(data, (Py_ssize_t *)&pos, &key, &value)) {
             char * k = PyString_AsString(key);
             //fprintf(stderr, "\n%s\n", k);
@@ -104,9 +109,11 @@ int get_perf_from_xenserver(const char *type, const char*url) {
                 //get value of key 'time' and 'data' in Dict: item2
                 PyObject *key1, *value1;
                 Py_ssize_t pos1 = 0;
+                //pydict_getitemstring return borrowed ref
                 PyObject *time_val = PyDict_GetItemString(item2, "time");
                 PyObject *data_val = PyDict_GetItemString(item2, "data");
                 char *time_val_str = PyString_AsString(time_val);
+                //pyint_aslong return borrowed ref
                 int data_val_int = (int)PyInt_AsLong(data_val);
                 bson_append_string(b, "time", time_val_str);
                 bson_append_int(b, "data", data_val_int);
