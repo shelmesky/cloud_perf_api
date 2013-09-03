@@ -168,6 +168,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     
     cJSON_Delete(json_root);
     curl_easy_cleanup(curl);
+    free(data_return_p->data);
     
     return 0;
 }

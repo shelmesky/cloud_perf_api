@@ -209,6 +209,9 @@ def converter(arg):
 	try:
 		obj.load(arg.strip())
 	except Exception, e:
+		fd = open('py.log', 'w')
+		fd.write(arg)
+		fd.close()
 		print arg.strip()
 	for uuid in obj.get_vm_list():
 		ret.append(get_vm_data(obj, uuid))

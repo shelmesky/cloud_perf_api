@@ -59,11 +59,13 @@ PyObject * PyCall(const char * module, const char *func, const char *format, ...
             }
         }
         else {
+            PyErr_Print(); 
             fprintf(stderr, "import function error\n");
             return (PyObject *)NULL;
         }
     }
     else { 
+        PyErr_Print(); 
         fprintf(stderr, "import module error\n");
         return (PyObject *)NULL;
     }
@@ -153,7 +155,7 @@ int head_data(void *ptr, size_t size, size_t nmemb, void *stream)
         strip(content_length);
         int length = atoi(content_length);
         struct data_return *ret = (struct data_return *)stream;
-        ret->data = calloc(length, 1);
+        ret->data = (char *)calloc(length, 1);
     }
     
     return (int)size * nmemb;
