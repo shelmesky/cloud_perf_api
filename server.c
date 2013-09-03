@@ -154,8 +154,10 @@ int head_data(void *ptr, size_t size, size_t nmemb, void *stream)
         memcpy(content_length, ptr + length_str_len, length_ptr - length_str_len);
         strip(content_length);
         int length = atoi(content_length);
+        fprintf(stderr, "Content-Length: %d\n", length);
         struct data_return *ret = (struct data_return *)stream;
-        ret->data = (char *)calloc(length, 1);
+        ret->data = (char *)calloc((length + 1) * sizeof(char), 1);
+        ret->size = length;
     }
     
     return (int)size * nmemb;
@@ -167,6 +169,7 @@ int write_data(void *ptr, size_t size, size_t nmemb, void *stream)
     struct data_return *ret = (struct data_return *)stream;
     int data_len = (int)strlen(ret->data);
     memcpy(ret->data + data_len, ptr, (int)size * nmemb);
+    strip(ret->data);
     return (int)size * nmemb;
 }
 

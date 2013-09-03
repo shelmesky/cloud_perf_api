@@ -19,6 +19,11 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data_return_p);
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
     CURLcode result = curl_easy_perform(curl);
+    //add NUL to the end
+    //data_return_p->data[data_return_p->size + 1] = '\0';
+    
+    int len = strlen(data_return_p->data);
+    fprintf(stderr, "Data Len: %d\n", len);
     
     // start executer python script
     PyGILState_STATE state;
@@ -107,6 +112,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
                 bson_append_int(b, "data", data_val_int);
                 
                 bson_append_finish_object(b);
+                
             }
             
             bson_append_finish_object(b);
@@ -165,6 +171,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     cJSON_AddStringToObject(json_root, "objects", dumps_json);
     
     char *output = cJSON_PrintUnformatted(json_root);
+    free(output);
     
     cJSON_Delete(json_root);
     curl_easy_cleanup(curl);

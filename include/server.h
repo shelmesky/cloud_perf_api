@@ -1,6 +1,7 @@
 
 struct data_return {
     char *data;
+    int size;
 };
 
 int bind_socket(int);
