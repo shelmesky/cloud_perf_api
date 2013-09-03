@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <python2.7/Python.h>
+#include <python2.7/frameobject.h>
 #include <mongo.h>
 #include "virt.h"
 #include "hash.h"
@@ -17,6 +18,7 @@
 #include "parse_json.h"
 #include "server.h"
 #include "utils.h"
+#include "queue.h"
 
 
 typedef struct
@@ -42,3 +44,4 @@ extern PyObject * PyCall(const char *, const char *, const char *, ... );
 extern times_before_t *get_before_now(void);
 extern void strip(char *);
 extern void *MongoConnect(mongo **, const char *, const int, int *);
+extern void process_python_exception(void);

@@ -2,6 +2,7 @@
 
 #define DEBUG 0
 #define server_signature "nginx/0.7.69"
+#define MAX_GET_PERF_THREAD 10
 
 int port = 1997;
 int nthreads = 100;
@@ -13,6 +14,8 @@ xen_session *session;
 hashmap *hashMap;
 //用于保存配置文件
 json_config_t *global_config = NULL;
+//全局线程安全队列
+QUEUE *queue;
 
 void exit_hook(int);
 
@@ -47,33 +50,76 @@ PyObject * PyCall(const char * module, const char *func, const char *format, ...
             va_end(vargs);
 
             pRetVal = PyEval_CallObject(pFunc, pParm);
-
-            return pRetVal;
-            //char *ret;
-            //PyArg_Parse(pRetVal, "s", &ret);
-            //return ret;
+            if(NULL != pRetVal) {
+                return pRetVal;
+            } else {
+                PyErr_Print(); 
+                fprintf(stderr, "Error occured while executer Python!\n");
+                return (PyObject *)NULL;
+            }
         }
         else {
-            printf("import function error\n");
+            fprintf(stderr, "import function error\n");
+            return (PyObject *)NULL;
         }
     }
-    else {
-        printf("import module error\n");
+    else { 
+        fprintf(stderr, "import module error\n");
+        return (PyObject *)NULL;
     }
-    return NULL;
+}
+
+
+void *periodical_get_perf(void *args) {
+    QUEUE_ITEM *item;
+    while(1) {
+        item = Get_Queue_Item(queue);
+        
+        //pthread_t self = pthread_self();
+        //fprintf(stderr, "%lu got: ", self);
+        
+        //fprintf(stderr, "%s: %s\n", item->action, (char*)item->data);
+        
+        //do some work
+        int ret = get_perf_from_xenserver(item->action, (char *)item->data);
+        
+        Free_Queue_Item(item);
+    }
 }
 
 
 void *periodical_10m(void *args) {
-    if(global_config->all_servers != NULL) {
-        all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
-        //恢复指针自加前的地址
-        xen_hosts->hosts -= xen_hosts->size;
-        while(xen_hosts->hosts->hostname != NULL) {
-            char *hostname_ori = xen_hosts->hosts->hostname;
-            fprintf(stderr, "%s\n", hostname_ori);
-            xen_hosts->hosts++;
+    while(1) {
+        if(global_config->all_servers != NULL) {
+            all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
+            //恢复指针自加前的地址
+            xen_hosts->hosts -= xen_hosts->size;
+            while(xen_hosts->hosts->hostname != NULL) {
+                {
+                    char *hostname_ori = xen_hosts->hosts->hostname;
+                    
+                    xen_session * host_session;
+                    //从hash table中根据hostname获取session
+                    host_session = (xen_session *)hmap_get(hashMap, (void *)hostname_ori);
+                    
+                    char *start;
+                    times_before_t *before = get_before_now();
+                    start = before->ten_minutes_ago;
+                    char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
+                    
+                    char url[1024];
+                    sprintf(url, url_format, hostname_ori, host_session->session_id, start);
+                    
+                    //fprintf(stderr, "%s\n", url);
+                    
+                    // push item to queue
+                    Add_Queue_Item(queue, "10m", url, sizeof(url));
+                }
+                    
+                xen_hosts->hosts++;
+            }
         }
+        sleep(5);
    }
    return NULL;
 }
@@ -713,6 +759,9 @@ int main(void)
         }
     }
     
+    //init QUEUE
+    queue = Initialize_Queue();
+    
     //start periodical threads
     int thread_ret;
     pthread_t periodical_t[4];
@@ -727,6 +776,14 @@ int main(void)
     
     thread_ret = pthread_create(&periodical_t[3], NULL, periodical_1y, NULL);
     if(0 != thread_ret) return -1;
+    
+    //start periodical_get_perf
+    int n;
+    pthread_t periodical_geter[MAX_GET_PERF_THREAD];
+    for(n=0; n<MAX_GET_PERF_THREAD; n++) {
+        thread_ret = pthread_create(&periodical_geter[n], NULL, periodical_get_perf, NULL);
+        if(0 != thread_ret) return -1;
+    }
     
 
 	//start http server

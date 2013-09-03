@@ -204,9 +204,13 @@ def get_vm_data(rrd_updates, uuid):
 def converter(arg):
 	ret = list()
 	obj = RRDUpdates()
-	obj.load(arg)
+	# content maybe with some 'space'
+	# so we must do the strip for it
+	try:
+		obj.load(arg.strip())
+	except Exception, e:
+		print arg.strip()
 	for uuid in obj.get_vm_list():
 		ret.append(get_vm_data(obj, uuid))
-		break
 	return [ret, json.dumps(ret)]
 

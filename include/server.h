@@ -18,3 +18,5 @@ void *periodical_10m(void *);
 void *periodical_2h(void *);
 void *periodical_1w(void *);
 void *periodical_1y(void *);
+void *periodical_get_perf(void *);
+int get_perf_from_xenserver(const char*, const char*);
