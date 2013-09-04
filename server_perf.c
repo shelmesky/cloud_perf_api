@@ -191,6 +191,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     CURL *curl;
     curl_global_init(CURL_GLOBAL_ALL);
     curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, head_data);
     curl_easy_setopt(curl, CURLOPT_WRITEHEADER, &data_return_p);
