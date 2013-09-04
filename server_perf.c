@@ -19,6 +19,10 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data_return_p);
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
     CURLcode result = curl_easy_perform(curl);
+    if(0 != result) {
+        fprintf(stderr, "error execute curl_easy_perform\n");
+        return -1;
+    }
     
     int len = strlen(data_return_p->data);
     fprintf(stderr, "Data Len: %d\n", len);
@@ -105,8 +109,6 @@ int get_perf_from_xenserver(const char *type, const char*url) {
                 item2 = PyList_GetItem(value, j);
                 
                 //get value of key 'time' and 'data' in Dict: item2
-                PyObject *key1, *value1;
-                Py_ssize_t pos1 = 0;
                 //pydict_getitemstring return borrowed ref
                 PyObject *time_val = PyDict_GetItemString(item2, "time");
                 PyObject *data_val = PyDict_GetItemString(item2, "data");
@@ -167,7 +169,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     PyGILState_Release(state);
     // end execute python
     
-    cJSON *json_root, *json_data;
+    cJSON *json_root;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));

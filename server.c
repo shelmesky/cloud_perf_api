@@ -92,6 +92,9 @@ void *periodical_get_perf(void *args) {
         
         //do some work
         int ret = get_perf_from_xenserver(item->action, (char *)item->data);
+        if(0 != ret){
+            fprintf(stderr, "execute get_perf_from_xenserver error!");
+        }
         
         Free_Queue_Item(item);
     }
@@ -246,6 +249,10 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data_return_p);
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
     CURLcode result = curl_easy_perform(curl);
+    if(0 != result) {
+        fprintf(stderr, "error execute curl_easy_perform\n");
+        return (char *)NULL;
+    }
     
     // start executer python script
     PyGILState_STATE state;
@@ -323,8 +330,6 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
                 item2 = PyList_GetItem(value, j);
                 
                 //get value of key 'time' and 'data' in Dict: item2
-                PyObject *key1, *value1;
-                Py_ssize_t pos1 = 0;
                 PyObject *time_val = PyDict_GetItemString(item2, "time");
                 PyObject *data_val = PyDict_GetItemString(item2, "data");
                 char *time_val_str = PyString_AsString(time_val);
@@ -332,12 +337,6 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
                 bson_append_string(b, "time", time_val_str);
                 bson_append_int(b, "data", data_val_int);
                 
-                //获取字典的key和value
-//                 while(PyDict_Next(item2, (Py_ssize_t *)&pos1, &key1, &value1)) {
-//                     char *key1_str = PyString_AsString(key1);
-//                     char *value1_str = PyString_AsString(value1);
-//                     //fprintf(stderr, "%s: %s\n", key1_str, value1_str);
-//                 }
                 bson_append_finish_object(b);
             }
             
@@ -388,7 +387,7 @@ char *get_perf(struct evhttp_request *req, struct evkeyvalq *params)
     PyGILState_Release(state);
     // end execute python
     
-    cJSON *json_root, *json_data;
+    cJSON *json_root;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
@@ -440,7 +439,7 @@ char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
     //得到vm的record
     xen_vm_get_record(host_session, &vm_record, vm);
     
-    cJSON *json_root, *json_data, *json_vms, *single_vm;
+    cJSON *json_root, *json_data;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
     cJSON_AddItemToObject(json_root, "status", cJSON_CreateString("0"));
