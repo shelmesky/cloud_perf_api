@@ -351,9 +351,12 @@ int get_perf_from_xenserver(const char *type, const char*url) {
         bson_destroy(b);
     }
     
+    Py_DecRef(ret);
+    
     PyGILState_Release(state);
     // end execute python
     
+    /*
     cJSON *json_root;
     //createobject是在堆上分配的内存
     json_root = cJSON_CreateObject();
@@ -366,8 +369,11 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     free(output);
     
     cJSON_Delete(json_root);
+    */
+    
     curl_easy_cleanup(curl);
     free(data_return_p->data);
+    free(before);
     
     return 0;
 }
