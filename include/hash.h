@@ -10,7 +10,7 @@
 #define HMAP_GROWTH_RATE 	2
 
 #define HMAP_MAKE_HASHFN	// build a few hash functions 
-#define HMAP_THREAD_SAFE 	// add "-lrt" to your GCC compile flags
+//#define HMAP_THREAD_SAFE 	// add "-lrt" to your GCC compile flags
 #define HMAP_DESTRUCTORS	// require destructors for value clean-up
 
 #define NEED 1 //需要做成hashCode

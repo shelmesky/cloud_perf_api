@@ -9,7 +9,7 @@ LDFLAGS = $(shell xml2-config --libs) \
 	  -Wl,-rpath,$(shell pwd)
 
 all:
-	clang -O3 -o server server.c hash.c virt.c xen.c cJSON.c parse_json.c utils.c mongoc.c queue.c server_perf.c py_exception.c -lpthread -lvirt -lxenserver -levent -lpython2.7 -lmongoc $(CFLAGS) $(LDFLAGS)
+	clang -O3 -o server server.c hash.c virt.c xen.c cJSON.c parse_json.c utils.c mongoc.c queue.c server_perf.c py_exception.c -lpthread -lvirt -lxenserver -levent -lpython2.7 -lmongoc $(CFLAGS) $(LDFLAGS) -DHMAP_THREAD_SAFE -lrt
 
 debug:
-	clang -O0 -o server server.c hash.c virt.c xen.c cJSON.c parse_json.c utils.c mongoc.c queue.c server_perf.c py_exception.c -lpthread -lvirt -lxenserver -levent -lpython2.7_d -lmongoc $(CFLAGS) $(LDFLAGS) -DPy_DEBUG -g
+	clang -O0 -o server server.c hash.c virt.c xen.c cJSON.c parse_json.c utils.c mongoc.c queue.c server_perf.c py_exception.c -lpthread -lvirt -lxenserver -levent -lpython2.7_d -lmongoc $(CFLAGS) $(LDFLAGS) -DPy_DEBUG -DHMAP_THREAD_SAFE -g =lrt
