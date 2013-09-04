@@ -199,6 +199,7 @@ def get_vm_data(rrd_updates, uuid):
     return main
 
 
+# CALLBACK FUNCTION, CALLED BY C CODE!!!
 # This function receive string arg
 # and return list
 def converter(arg):
