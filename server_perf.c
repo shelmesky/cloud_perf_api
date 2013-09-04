@@ -24,8 +24,8 @@ int get_perf_from_xenserver(const char *type, const char*url) {
         return -1;
     }
     
-    int len = strlen(data_return_p->data);
-    fprintf(stderr, "Data Len: %d\n", len);
+    size_t len = strlen(data_return_p->data);
+    fprintf(stderr, "Data Len: %lu\n", len);
     
     // start executer python script
     PyGILState_STATE state;
