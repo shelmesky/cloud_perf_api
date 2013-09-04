@@ -123,14 +123,14 @@ void *periodical_1w(void *args) {
                     
                     char *start;
                     times_before_t *before = get_before_now();
-                    start = before->ten_minutes_ago;
+                    start = before->one_week_ago;
                     char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
                     
                     char url[1024];
                     sprintf(url, url_format, hostname_ori, host_session->session_id, start);
                     
                     // push item to queue
-                    Add_Queue_Item(queue, "10m", url, sizeof(url));
+                    Add_Queue_Item(queue, "1w", url, sizeof(url));
                 }
                     
                 copy_xen_hosts->hosts++;
@@ -138,8 +138,8 @@ void *periodical_1w(void *args) {
             //重置指针的位置
             copy_xen_hosts->hosts -= copy_xen_hosts->size;
         }
-        //sleep 5 seconds
-        sleep(5);
+        //sleep 1 hour
+        sleep(3600);
    }
    return NULL;
 }
@@ -163,14 +163,14 @@ void *periodical_1y(void *args) {
                     
                     char *start;
                     times_before_t *before = get_before_now();
-                    start = before->ten_minutes_ago;
+                    start = before->one_year_ago;
                     char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
                     
                     char url[1024];
                     sprintf(url, url_format, hostname_ori, host_session->session_id, start);
                     
                     // push item to queue
-                    Add_Queue_Item(queue, "10m", url, sizeof(url));
+                    Add_Queue_Item(queue, "1y", url, sizeof(url));
                 }
                     
                 copy_xen_hosts->hosts++;
@@ -178,8 +178,8 @@ void *periodical_1y(void *args) {
             //重置指针的位置
             copy_xen_hosts->hosts -= copy_xen_hosts->size;
         }
-        //sleep 5 seconds
-        sleep(5);
+        //sleep 1 day
+        sleep(86400);
    }
    return NULL;
 }

@@ -716,11 +716,11 @@ int main(void)
     thread_ret = pthread_create(&periodical_t[1], NULL, periodical_2h, NULL);
     if(0 != thread_ret) return -1;
     
-    //thread_ret = pthread_create(&periodical_t[2], NULL, periodical_1w, NULL);
-    //if(0 != thread_ret) return -1;
+    thread_ret = pthread_create(&periodical_t[2], NULL, periodical_1w, NULL);
+    if(0 != thread_ret) return -1;
     
-    //thread_ret = pthread_create(&periodical_t[3], NULL, periodical_1y, NULL);
-    //if(0 != thread_ret) return -1;
+    thread_ret = pthread_create(&periodical_t[3], NULL, periodical_1y, NULL);
+    if(0 != thread_ret) return -1;
     
     //start periodical_get_perf
     int n;
