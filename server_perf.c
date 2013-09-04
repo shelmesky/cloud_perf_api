@@ -323,6 +323,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
             bson cond[1];
             bson_init(cond);
             bson_append_string(cond, "uuid", uuid_str);
+            bson_append_string(cond, "type", type);
             bson_finish(cond);
             
             bson op[1];
