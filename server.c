@@ -146,16 +146,16 @@ void *periodical_1y(void *args) {
 }
 
 
-int head_data(void *ptr, size_t size, size_t nmemb, void *stream)
+size_t head_data(char *buffer, size_t size, size_t nmemb, void *stream)
 {
     char *pos;
     char *length_str = "Content-Length: ";
-    pos = strstr(ptr, length_str);
+    pos = strstr(buffer, length_str);
     if(pos) {
-        int length_str_len = (int)strlen(length_str);
-        int length_ptr = (int)strlen(ptr);
+        size_t length_str_len = strlen(length_str);
+        size_t length_ptr = strlen(buffer);
         char content_length[128];
-        memcpy(content_length, ptr + length_str_len, length_ptr - length_str_len);
+        memcpy(content_length, buffer + length_str_len, length_ptr - length_str_len);
         strip(content_length);
         int length = atoi(content_length);
         fprintf(stderr, "Content-Length: %d\n", length);
@@ -164,17 +164,17 @@ int head_data(void *ptr, size_t size, size_t nmemb, void *stream)
         ret->size = length;
     }
     
-    return (int)size * nmemb;
+    return size * nmemb;
 }
 
 
-int write_data(void *ptr, size_t size, size_t nmemb, void *stream)
+size_t write_data(char *buffer, size_t size, size_t nmemb, void *stream)
 {
     struct data_return *ret = (struct data_return *)stream;
-    int data_len = (int)strlen(ret->data);
-    memcpy(ret->data + data_len, ptr, (int)size * nmemb);
+    size_t data_len = strlen(ret->data);
+    memcpy(ret->data + data_len, buffer, size * nmemb);
     strip(ret->data);
-    return (int)size * nmemb;
+    return size * nmemb;
 }
 
 
