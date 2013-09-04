@@ -80,72 +80,6 @@ PyObject * PyCall(const char * module, const char *func, const char *format, ...
 }
 
 
-void *periodical_get_perf(void *args) {
-    QUEUE_ITEM *item;
-    while(1) {
-        item = Get_Queue_Item(queue);
-        
-        //do some work
-        int ret = get_perf_from_xenserver(item->action, (char *)item->data);
-        if(0 != ret){
-            fprintf(stderr, "execute get_perf_from_xenserver error!");
-        }
-        
-        Free_Queue_Item(item);
-    }
-}
-
-
-void *periodical_10m(void *args) {
-    while(1) {
-        if(global_config->all_servers != NULL) {
-            all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
-            //恢复指针自加前的地址
-            xen_hosts->hosts -= xen_hosts->size;
-            while(xen_hosts->hosts->hostname != NULL) {
-                {
-                    char *hostname_ori = xen_hosts->hosts->hostname;
-                    
-                    xen_session * host_session;
-                    //从hash table中根据hostname获取session
-                    host_session = (xen_session *)hmap_get(hashMap, (void *)hostname_ori);
-                    
-                    char *start;
-                    times_before_t *before = get_before_now();
-                    start = before->ten_minutes_ago;
-                    char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
-                    
-                    char url[1024];
-                    sprintf(url, url_format, hostname_ori, host_session->session_id, start);
-                    
-                    // push item to queue
-                    Add_Queue_Item(queue, "10m", url, sizeof(url));
-                }
-                    
-                xen_hosts->hosts++;
-            }
-        }
-        sleep(5);
-   }
-   return NULL;
-}
-
-
-void *periodical_2h(void *args) {
-   return NULL;
-}
-
-
-void *periodical_1w(void *args) {
-   return NULL;
-}
-
-
-void *periodical_1y(void *args) {
-   return NULL;
-}
-
-
 size_t head_data(char *buffer, size_t size, size_t nmemb, void *stream)
 {
     char *pos;
@@ -764,6 +698,7 @@ int main(void)
         }
     }
     
+    
     //init QUEUE
     queue = Initialize_Queue();
     
@@ -776,11 +711,11 @@ int main(void)
     thread_ret = pthread_create(&periodical_t[1], NULL, periodical_2h, NULL);
     if(0 != thread_ret) return -1;
     
-    thread_ret = pthread_create(&periodical_t[2], NULL, periodical_1w, NULL);
-    if(0 != thread_ret) return -1;
+    //thread_ret = pthread_create(&periodical_t[2], NULL, periodical_1w, NULL);
+    //if(0 != thread_ret) return -1;
     
-    thread_ret = pthread_create(&periodical_t[3], NULL, periodical_1y, NULL);
-    if(0 != thread_ret) return -1;
+    //thread_ret = pthread_create(&periodical_t[3], NULL, periodical_1y, NULL);
+    //if(0 != thread_ret) return -1;
     
     //start periodical_get_perf
     int n;

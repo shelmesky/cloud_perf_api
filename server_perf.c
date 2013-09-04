@@ -4,6 +4,197 @@ extern char *converter_func;
 extern char *converter_module;
 extern mongo *mongo_conn;
 extern xen_session *session;
+extern json_config_t *global_config;
+extern QUEUE *queue;
+extern hashmap *hashMap;
+
+
+void *periodical_get_perf(void *args) {
+    QUEUE_ITEM *item;
+    while(1) {
+        item = Get_Queue_Item(queue);
+        
+        //do some work
+        int ret = get_perf_from_xenserver(item->action, (char *)item->data);
+        if(0 != ret){
+            fprintf(stderr, "execute get_perf_from_xenserver error!");
+        }
+        
+        Free_Queue_Item(item);
+    }
+}
+
+
+void *periodical_10m(void *args) {
+    all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
+    //每个线程单独复制的对象
+    all_host_t *copy_xen_hosts = (all_host_t *)calloc(sizeof(all_host_t) * xen_hosts->size, 1);
+    memcpy(copy_xen_hosts, xen_hosts, sizeof(all_host_t) * xen_hosts->size);
+    
+    while(1) {
+        if(global_config->all_servers != NULL) {
+            while(copy_xen_hosts->hosts->hostname != NULL) {
+                {
+                    char *hostname_ori = copy_xen_hosts->hosts->hostname;
+                    fprintf(stderr, "hostname_ori in 10m: %p :", hostname_ori);
+                    if(hostname_ori != NULL) {
+                        fprintf(stderr, "%s\n", hostname_ori);
+                    }
+                    
+                    xen_session * host_session;
+                    //从hash table中根据hostname获取session
+                    host_session = (xen_session *)hmap_get(hashMap, (void *)hostname_ori);
+                    
+                    char *start;
+                    times_before_t *before = get_before_now();
+                    start = before->ten_minutes_ago;
+                    char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
+                    
+                    char url[1024];
+                    sprintf(url, url_format, hostname_ori, host_session->session_id, start);
+                    
+                    // push item to queue
+                    Add_Queue_Item(queue, "10m", url, sizeof(url));
+                }
+                    
+                copy_xen_hosts->hosts++;
+            }
+            //重置指针的位置
+            copy_xen_hosts->hosts -= copy_xen_hosts->size;
+        }
+        //sleep 5 seconds
+        sleep(5);
+   }
+   return NULL;
+}
+
+
+void *periodical_2h(void *args) {
+    all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
+    //每个线程单独复制的对象
+    all_host_t *copy_xen_hosts = (all_host_t *)calloc(sizeof(all_host_t) * xen_hosts->size, 1);
+    memcpy(copy_xen_hosts, xen_hosts, sizeof(all_host_t) * xen_hosts->size);
+    
+    while(1) {
+        if(global_config->all_servers != NULL) {
+            while(copy_xen_hosts->hosts->hostname != NULL) {
+                {
+                    char *hostname_ori = copy_xen_hosts->hosts->hostname;
+                    fprintf(stderr, "hostname_ori in 10m: %p :", hostname_ori);
+                    if(hostname_ori != NULL) {
+                        fprintf(stderr, "%s\n", hostname_ori);
+                    }
+                    
+                    xen_session * host_session;
+                    //从hash table中根据hostname获取session
+                    host_session = (xen_session *)hmap_get(hashMap, (void *)hostname_ori);
+                    
+                    char *start;
+                    times_before_t *before = get_before_now();
+                    start = before->two_hours_ago;
+                    char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
+                    
+                    char url[1024];
+                    sprintf(url, url_format, hostname_ori, host_session->session_id, start);
+                    
+                    // push item to queue
+                    Add_Queue_Item(queue, "2h", url, sizeof(url));
+                }
+                    
+                copy_xen_hosts->hosts++;
+            }
+            //重置指针的位置
+            copy_xen_hosts->hosts -= copy_xen_hosts->size;
+        }
+        //sleep 1 minute 
+        sleep(60);
+   }
+   return NULL;
+}
+
+
+void *periodical_1w(void *args) {
+    all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
+    //恢复指针自加前的地址
+    xen_hosts->hosts -= xen_hosts->size;
+    //每个线程单独复制的对象
+    all_host_t *copy_xen_hosts = (all_host_t *)calloc(sizeof(all_host_t) * xen_hosts->size, 1);
+    memcpy(copy_xen_hosts, xen_hosts, sizeof(all_host_t) * xen_hosts->size);
+    
+    while(1) {
+        if(global_config->all_servers != NULL) {
+            while(copy_xen_hosts->hosts->hostname != NULL) {
+                {
+                    char *hostname_ori = copy_xen_hosts->hosts->hostname;
+                    
+                    xen_session * host_session;
+                    //从hash table中根据hostname获取session
+                    host_session = (xen_session *)hmap_get(hashMap, (void *)hostname_ori);
+                    
+                    char *start;
+                    times_before_t *before = get_before_now();
+                    start = before->ten_minutes_ago;
+                    char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
+                    
+                    char url[1024];
+                    sprintf(url, url_format, hostname_ori, host_session->session_id, start);
+                    
+                    // push item to queue
+                    Add_Queue_Item(queue, "10m", url, sizeof(url));
+                }
+                    
+                copy_xen_hosts->hosts++;
+            }
+            //重置指针的位置
+            copy_xen_hosts->hosts -= copy_xen_hosts->size;
+        }
+        //sleep 5 seconds
+        sleep(5);
+   }
+   return NULL;
+}
+
+
+void *periodical_1y(void *args) {
+    all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
+    //恢复指针自加前的地址
+    xen_hosts->hosts -= xen_hosts->size;
+    //每个线程单独复制的对象
+    all_host_t *copy_xen_hosts = (all_host_t *)calloc(sizeof(all_host_t) * xen_hosts->size, 1);
+    memcpy(copy_xen_hosts, xen_hosts, sizeof(all_host_t) * xen_hosts->size);
+    
+    while(1) {
+        if(global_config->all_servers != NULL) {
+            while(copy_xen_hosts->hosts->hostname != NULL) {
+                {
+                    char *hostname_ori = copy_xen_hosts->hosts->hostname;
+                    
+                    xen_session * host_session;
+                    //从hash table中根据hostname获取session
+                    host_session = (xen_session *)hmap_get(hashMap, (void *)hostname_ori);
+                    
+                    char *start;
+                    times_before_t *before = get_before_now();
+                    start = before->ten_minutes_ago;
+                    char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
+                    
+                    char url[1024];
+                    sprintf(url, url_format, hostname_ori, host_session->session_id, start);
+                    
+                    // push item to queue
+                    Add_Queue_Item(queue, "10m", url, sizeof(url));
+                }
+                    
+                copy_xen_hosts->hosts++;
+            }
+            //重置指针的位置
+            copy_xen_hosts->hosts -= copy_xen_hosts->size;
+        }
+        //sleep 5 seconds
+        sleep(5);
+   }
+   return NULL;
+}
 
 int get_perf_from_xenserver(const char *type, const char*url) {
     times_before_t *before = get_before_now();
@@ -58,13 +249,14 @@ int get_perf_from_xenserver(const char *type, const char*url) {
         //pystring_asstring return borrowed ref
         char *uuid_str = PyString_AsString(uuid);
         
-        //查询DB中是否有uuid的记录
+        //查询DB中是否有指定type的uuid的记录
         //如果有插入新记录包含_oid
         //否则不包含
         //因为MongoDB不允许更新oid
         bson query[1];
         bson_init(query);
         bson_append_string(query, "uuid", uuid_str);
+        bson_append_string(query, "type", type);
         bson_finish(query);
         int mg_ret = mongo_find_one(mongo_conn,
                                     "wisemonitor.virtual_host",
