@@ -633,6 +633,7 @@ void generic_handler(struct evhttp_request * req, void *arg)
 int main(void)
 {
 	// process signal
+	signal(SIGALRM, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, exit_hook);
     signal(SIGKILL, exit_hook);
@@ -677,9 +678,10 @@ int main(void)
     //init hashmap
     hashMap = mk_hmap(str_hash_fn, str_eq_fn, str_del_fn, 1);
     
+    all_host_t *xen_hosts = NULL;
     if(config->all_servers != NULL) {
         //登录XenServer API
-        all_host_t * xen_hosts = (all_host_t *)config->all_servers;
+        xen_hosts = (all_host_t *)config->all_servers;
         while(xen_hosts->hosts->hostname != NULL) {
             char *hostname_ori = xen_hosts->hosts->hostname;
             size_t hostname_len = strlen(hostname_ori);
@@ -698,6 +700,8 @@ int main(void)
         }
     }
     
+    //重置hosts指针的位置
+    xen_hosts->hosts -= xen_hosts->size;
     
     //init QUEUE
     queue = Initialize_Queue();

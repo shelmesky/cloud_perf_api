@@ -36,10 +36,6 @@ void *periodical_10m(void *args) {
             while(copy_xen_hosts->hosts->hostname != NULL) {
                 {
                     char *hostname_ori = copy_xen_hosts->hosts->hostname;
-                    fprintf(stderr, "hostname_ori in 10m: %p :", hostname_ori);
-                    if(hostname_ori != NULL) {
-                        fprintf(stderr, "%s\n", hostname_ori);
-                    }
                     
                     xen_session * host_session;
                     //从hash table中根据hostname获取session
@@ -80,10 +76,6 @@ void *periodical_2h(void *args) {
             while(copy_xen_hosts->hosts->hostname != NULL) {
                 {
                     char *hostname_ori = copy_xen_hosts->hosts->hostname;
-                    fprintf(stderr, "hostname_ori in 10m: %p :", hostname_ori);
-                    if(hostname_ori != NULL) {
-                        fprintf(stderr, "%s\n", hostname_ori);
-                    }
                     
                     xen_session * host_session;
                     //从hash table中根据hostname获取session
@@ -115,8 +107,6 @@ void *periodical_2h(void *args) {
 
 void *periodical_1w(void *args) {
     all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
-    //恢复指针自加前的地址
-    xen_hosts->hosts -= xen_hosts->size;
     //每个线程单独复制的对象
     all_host_t *copy_xen_hosts = (all_host_t *)calloc(sizeof(all_host_t) * xen_hosts->size, 1);
     memcpy(copy_xen_hosts, xen_hosts, sizeof(all_host_t) * xen_hosts->size);
@@ -157,8 +147,6 @@ void *periodical_1w(void *args) {
 
 void *periodical_1y(void *args) {
     all_host_t *xen_hosts = (all_host_t *)global_config->all_servers;
-    //恢复指针自加前的地址
-    xen_hosts->hosts -= xen_hosts->size;
     //每个线程单独复制的对象
     all_host_t *copy_xen_hosts = (all_host_t *)calloc(sizeof(all_host_t) * xen_hosts->size, 1);
     memcpy(copy_xen_hosts, xen_hosts, sizeof(all_host_t) * xen_hosts->size);
@@ -325,6 +313,9 @@ int get_perf_from_xenserver(const char *type, const char*url) {
             if(mongo_insert(mongo_conn, "wisemonitor.virtual_host", b, NULL) != MONGO_OK) {
                 fprintf(stderr, "FAIL: Failed to insert document whth err: %s\n", mongo_conn->lasterrstr);
             }
+            else {
+                fprintf(stderr, "Insert OK! Type: %s\n", type);
+            }
         }
         else {
             // update
@@ -345,7 +336,7 @@ int get_perf_from_xenserver(const char *type, const char*url) {
                          MONGO_UPDATE_MULTI,
                          0);
             if (update_ret == MONGO_OK) {
-                fprintf(stderr, "Record Updated Finished!\n");
+                fprintf(stderr, "Updated OK! Type: %s\n", type);
             }
             else {
                 fprintf(stderr, "%s\nRecord Updated Error!\n", mongo_conn->lasterrstr);
