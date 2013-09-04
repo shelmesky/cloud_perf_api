@@ -85,11 +85,6 @@ void *periodical_get_perf(void *args) {
     while(1) {
         item = Get_Queue_Item(queue);
         
-        //pthread_t self = pthread_self();
-        //fprintf(stderr, "%lu got: ", self);
-        
-        //fprintf(stderr, "%s: %s\n", item->action, (char*)item->data);
-        
         //do some work
         int ret = get_perf_from_xenserver(item->action, (char *)item->data);
         if(0 != ret){
@@ -122,8 +117,6 @@ void *periodical_10m(void *args) {
                     
                     char url[1024];
                     sprintf(url, url_format, hostname_ori, host_session->session_id, start);
-                    
-                    //fprintf(stderr, "%s\n", url);
                     
                     // push item to queue
                     Add_Queue_Item(queue, "10m", url, sizeof(url));
