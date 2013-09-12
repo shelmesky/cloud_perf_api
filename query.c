@@ -3,7 +3,7 @@
 extern mongo *mongo_conn;
 
 
-char * query_perfdata(char *uuid, char* type) {
+cJSON * query_perfdata(char *uuid, char* type) {
   cJSON *json_root, *json_data;
   json_root = cJSON_CreateObject();
   cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
@@ -83,7 +83,6 @@ char * query_perfdata(char *uuid, char* type) {
   }
   
   cJSON_AddStringToObject(json_root, "status", "0");
-  char *output = cJSON_PrintUnformatted(json_root);
-  return output;
+  return json_root;
 }
   

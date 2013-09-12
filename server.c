@@ -429,8 +429,11 @@ int main(void)
         fprintf(stderr, "Failed connect to MongoDB!\n");
     }
 
-    char * o = query_perfdata("", "");
-    printf("%s\n", o);
+    cJSON *o = query_perfdata("", "");
+    char *out = cJSON_PrintUnformatted(o);
+    printf("%s\n", out);
+    free(out);
+    cJSON_Delete(o);
     
     //init python
     Py_Initialize();

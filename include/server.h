@@ -20,4 +20,4 @@ void *periodical_1w(void *);
 void *periodical_1y(void *);
 void *periodical_get_perf(void *);
 int get_perf_from_xenserver(const char*, const char*);
-char *query_perfdata(char*, char*);
+cJSON *query_perfdata(char*, char*);
