@@ -23,7 +23,6 @@ void exit_hook(int);
 method_map_t method_map [] = {
     {"get_vm", get_vm},
     {"get_vm_list", get_vm_list},
-    {"get_perf", get_perf},
     {NULL, NULL}
 };
 
@@ -411,9 +410,9 @@ void generic_handler(struct evhttp_request * req, void *arg)
 
 
 int main(void)
-{
-	// process signal
-	signal(SIGALRM, SIG_IGN);
+{		
+    // process signal
+    signal(SIGALRM, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, exit_hook);
     signal(SIGKILL, exit_hook);
@@ -430,6 +429,9 @@ int main(void)
         fprintf(stderr, "Failed connect to MongoDB!\n");
     }
 
+    char * o = query_perfdata("", "");
+    printf("%s\n", o);
+    
     //init python
     Py_Initialize();
     PyEval_InitThreads();
@@ -548,7 +550,6 @@ int main(void)
 	for(i=0; i<nthreads; i++) {
         pthread_join(threads[i], NULL);
     }
-    
     //Py_InitializeEx(0);
     parse_config_free(config);
     free_hmap(hashMap);
