@@ -4,16 +4,18 @@ extern mongo *mongo_conn;
 
 
 cJSON * query_perfdata(char *uuid, char* type) {
+  int error = 0;
+  
   cJSON *json_root, *json_data;
   json_root = cJSON_CreateObject();
   cJSON_AddItemToObject(json_root, "data", json_data=cJSON_CreateObject());
   
   bson query[1];
   bson_init(query);
-  bson_append_string(query, "uuid", "5ccf18aa-f996-3000-a770-a4d9e8556224");
-  //bson_append_string(query, "uuid", uuid);
-  bson_append_string(query, "type", "10m");
-  //bson_append_string(query, "type", type);
+  //bson_append_string(query, "uuid", "5ccf18aa-f996-3000-a770-a4d9e8556224");
+  bson_append_string(query, "uuid", uuid);
+  //bson_append_string(query, "type", "10m");
+  bson_append_string(query, "type", type);
   bson_finish(query);
   
   bson out[1];
@@ -22,7 +24,7 @@ cJSON * query_perfdata(char *uuid, char* type) {
   bson_append_int(fields, "data", 1);
   bson_finish(fields);
   
-  mongo_cursor * cursor;
+  mongo_cursor * cursor = NULL;
   cursor = mongo_find(mongo_conn, "wisemonitor.virtual_host", query, fields, 30, 0, 0);
   
   while(mongo_cursor_next(cursor) == MONGO_OK) {
@@ -61,15 +63,13 @@ cJSON * query_perfdata(char *uuid, char* type) {
 	  bson_iterator it3[1];
 	  bson_iterator_init(it3, sub2);
 	  
-	  printf("%s:\n", key_filed);
+	  //printf("%s:\n", key_filed);
 	  // {"data": "xxx", "time": "xxx"}
 	  bson_iterator temp[1];
 	  if(bson_find(temp, sub2, "time")) {
-	    //printf("%s\n", bson_iterator_string(temp));
 	    cJSON_AddStringToObject(item, "time", bson_iterator_string(temp));
 	  }
 	  if(bson_find(temp, sub2, "data")) {
-	    //printf("%d\n\n", bson_iterator_int(temp));
 	    int data = bson_iterator_int(temp);
 	    char result[128];
 	    sprintf(result, "%d", data);
@@ -77,12 +77,17 @@ cJSON * query_perfdata(char *uuid, char* type) {
 	  }
 	  
 	}
-	break;
+	//break;
       }
     }
   }
   
+  if(error == 1) {
+    cJSON_AddStringToObject(json_root, "status", "1");
+  }
+ 
   cJSON_AddStringToObject(json_root, "status", "0");
+  
   return json_root;
 }
   

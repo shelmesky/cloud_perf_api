@@ -21,8 +21,7 @@ void exit_hook(int);
 
 
 method_map_t method_map [] = {
-    {"get_vm", get_vm},
-    {"get_vm_list", get_vm_list},
+    {"get_perfdata", get_perfdata},
     {NULL, NULL}
 };
 
@@ -109,6 +108,36 @@ size_t write_data(char *buffer, size_t size, size_t nmemb, void *stream)
     strip(ret->data);
     return size * nmemb;
 }
+
+
+char *get_perfdata(struct evhttp_request *req, struct evkeyvalq *params)
+{
+    char *output;
+    char uuid[512];
+    char type[32];
+    
+    const char *uuid_header = evhttp_find_header(params, "uuid");
+    const char *type_header = evhttp_find_header(params, "type");
+    if(uuid_header == NULL) {
+        output = method_error("Argument 'uuid' is missed!");
+        return output;
+    }
+    if(type_header == NULL) {
+        output = method_error("Argument 'type' is missed!");
+        return output;
+    }
+    
+    sprintf(uuid, "%s", uuid_header);
+    sprintf(type, "%s", type_header);
+    
+    cJSON *result = query_perfdata(uuid, type);
+    if(result != (cJSON *)NULL) {
+        output = cJSON_PrintUnformatted(result);
+        cJSON_Delete(result);
+        return output;
+    }
+}
+
 
 char* get_vm(struct evhttp_request* req , struct evkeyvalq* params)
 {
@@ -359,7 +388,7 @@ void *dispatch(void *arg) {
 void api_handler(struct evhttp_request * req, void *arg)
 {
     int ret;
-    char * output;
+    char * output = NULL;
     char *decoded_uri;
     decoded_uri = evhttp_decode_uri(req->uri);
     struct evkeyvalq params;
@@ -396,6 +425,10 @@ void api_handler(struct evhttp_request * req, void *arg)
     evhttp_add_header(req->output_headers, "Access-Control-Max-Age", "86400");
     evhttp_send_reply(req, HTTP_OK, "OK", buf);
     evbuffer_free(buf);
+    
+    if(output != NULL) {
+        free(output);
+    }
 }
 
 
@@ -429,12 +462,6 @@ int main(void)
         fprintf(stderr, "Failed connect to MongoDB!\n");
     }
 
-    cJSON *o = query_perfdata("", "");
-    char *out = cJSON_PrintUnformatted(o);
-    printf("%s\n", out);
-    free(out);
-    cJSON_Delete(o);
-    
     //init python
     Py_Initialize();
     PyEval_InitThreads();
