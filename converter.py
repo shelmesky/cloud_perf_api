@@ -190,9 +190,9 @@ def get_vm_data(rrd_updates, uuid):
                 temp1["timestamp"] = max_time
                 try:
                     if "cpu" in param:
-                        temp1["data"] = int(float(data) * 1000)
+                        temp1["data"] = float(data) * 1000
                     else:
-                        temp1["data"] = int(float(data))
+                        temp1["data"] = float(data)
                 except Exception:
                     temp1["data"] = 0
                 temp[param].append(temp1)

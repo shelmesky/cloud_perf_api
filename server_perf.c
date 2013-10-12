@@ -297,10 +297,10 @@ int get_perf_from_xenserver(const char *type, const char*url) {
                 char *time_val_str = PyString_AsString(time_val);
                 long timestamp_val = PyLong_AsLong(timestamp);
                 //pyint_aslong return borrowed ref
-                int data_val_int = (int)PyInt_AsLong(data_val);
+                double data_val_doubel = PyFloat_AsDouble(data_val);
                 bson_append_string(b, "last_update", time_val_str);
                 bson_append_long(b, "timestamp", timestamp_val);
-                bson_append_int(b, "data", data_val_int);
+                bson_append_double(b, "data", data_val_doubel);
                 
                 bson_append_finish_object(b);
                 
