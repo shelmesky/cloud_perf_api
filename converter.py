@@ -185,8 +185,9 @@ def get_vm_data(rrd_updates, uuid):
                 if epoch > max_time:
                     max_time = epoch
                     data = dv
-                nt = time.strftime("%H:%M:%S", time.localtime(max_time))
-                temp1["time"] = nt
+                nt = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(max_time))
+                temp1["last_update"] = nt
+                temp1["timestamp"] = max_time
                 try:
                     if "cpu" in param:
                         temp1["data"] = int(float(data) * 1000)

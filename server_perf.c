@@ -291,12 +291,15 @@ int get_perf_from_xenserver(const char *type, const char*url) {
                 
                 //get value of key 'time' and 'data' in Dict: item2
                 //pydict_getitemstring return borrowed ref
-                PyObject *time_val = PyDict_GetItemString(item2, "time");
+                PyObject *time_val = PyDict_GetItemString(item2, "last_update");
+                PyObject *timestamp = PyDict_GetItemString(item2, "timestamp");
                 PyObject *data_val = PyDict_GetItemString(item2, "data");
                 char *time_val_str = PyString_AsString(time_val);
+                long timestamp_val = PyLong_AsLong(timestamp);
                 //pyint_aslong return borrowed ref
                 int data_val_int = (int)PyInt_AsLong(data_val);
-                bson_append_string(b, "time", time_val_str);
+                bson_append_string(b, "last_update", time_val_str);
+                bson_append_long(b, "timestamp", timestamp_val);
                 bson_append_int(b, "data", data_val_int);
                 
                 bson_append_finish_object(b);
