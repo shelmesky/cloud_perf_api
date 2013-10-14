@@ -14,6 +14,9 @@ void *periodical_get_perf(void *args) {
     while(1) {
         item = Get_Queue_Item(queue);
         
+        //for debug
+        fprintf(stderr, "URL: %s\n", (char *)item->data);
+        
         //do some work
         int ret = get_perf_from_xenserver(item->action, (char *)item->data);
         if(0 != ret){
