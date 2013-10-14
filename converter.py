@@ -215,7 +215,11 @@ def converter(arg):
 		fd.write(arg)
 		fd.close()
 		print arg.strip()
-	for uuid in obj.get_vm_list():
-		ret.append(get_vm_data(obj, uuid))
+	try:
+		for uuid in obj.get_vm_list():
+			ret.append(get_vm_data(obj, uuid))
+	except Exception, e:
+		print e
+		return [[], ""]
 	return [ret, json.dumps(ret)]
 

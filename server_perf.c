@@ -225,6 +225,12 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     //fprintf(stderr, "%s\n", dumps_json);
     
     Py_ssize_t ret_size = PyList_GET_SIZE(original_list);
+    
+    //如果convert.py执行时返回错误，会返回[[], ""]，此处做检测
+    if(strlen(dumps_json) == 0 || ret_size ==0) {
+        return -1;
+    }
+    
     int i;
     //获取最外层列表的元素
     //每个元素是字段，{uuid: "string", data: {}}
