@@ -2,7 +2,7 @@
 
 #define DEBUG 0
 #define server_signature "nginx/0.7.69"
-#define MAX_GET_PERF_THREAD 10
+#define MAX_GET_PERF_THREAD 100
 
 int port = 1997;
 int nthreads = 100;

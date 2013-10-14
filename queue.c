@@ -82,7 +82,6 @@ void Free_Queue_Item(QUEUE_ITEM *queue_item)
 	free(queue_item);
 }
 
-#if defined(TEST_CODE)
 void Print_Queue_Items(QUEUE *queue)
 {
     QUEUE_ITEM *item;
@@ -94,6 +93,7 @@ void Print_Queue_Items(QUEUE *queue)
     }
 }
 
+#if defined(TEST_CODE)
 int main(int argc, char *argv[])
 {
     QUEUE *queue;

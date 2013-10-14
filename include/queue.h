@@ -25,5 +25,6 @@ QUEUE *Initialize_Queue(void);
 void Add_Queue_Item(QUEUE *, char *, void *, size_t);
 QUEUE_ITEM *Get_Queue_Item(QUEUE *);
 void Free_Queue_Item(QUEUE_ITEM *);
+void Print_Queue_Items(QUEUE *);
 
 #endif

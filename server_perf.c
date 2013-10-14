@@ -10,17 +10,19 @@ extern hashmap *hashMap;
 
 
 void *periodical_get_perf(void *args) {
-    QUEUE_ITEM *item;
+    //QUEUE_ITEM *item;
     while(1) {
+        QUEUE_ITEM *item;
         item = Get_Queue_Item(queue);
         
         //for debug
-        fprintf(stderr, "URL: %s\n", (char *)item->data);
+        fprintf(stderr, "GOT: TYPE: %s URL: %s\n", item->action, (char *)item->data);
+        //Print_Queue_Items(queue);
         
         //do some work
         int ret = get_perf_from_xenserver(item->action, (char *)item->data);
         if(0 != ret){
-            fprintf(stderr, "execute get_perf_from_xenserver error!");
+            fprintf(stderr, "execute get_perf_from_xenserver error!\n");
         }
         
         Free_Queue_Item(item);
@@ -49,11 +51,14 @@ void *periodical_10m(void *args) {
                     start = before->ten_minutes_ago;
                     char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
                     
-                    char url[1024];
+                    char *url = (char *)calloc(sizeof(char), 1024);
                     sprintf(url, url_format, hostname_ori, host_session->session_id, start);
                     
                     // push item to queue
-                    Add_Queue_Item(queue, "10m", url, sizeof(url));
+                    Add_Queue_Item(queue, "10m", (void *)url, sizeof(url));
+                    
+                    fprintf(stderr, "ACTION: %s Add to QUEUE: %s\n", "10m", url);
+                    //Print_Queue_Items(queue);
                 }
                     
                 copy_xen_hosts->hosts++;
@@ -89,7 +94,7 @@ void *periodical_2h(void *args) {
                     start = before->two_hours_ago;
                     char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
                     
-                    char url[1024];
+                    char *url = (char *)calloc(sizeof(char), 1024);
                     sprintf(url, url_format, hostname_ori, host_session->session_id, start);
                     
                     // push item to queue
@@ -129,7 +134,7 @@ void *periodical_1w(void *args) {
                     start = before->one_week_ago;
                     char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
                     
-                    char url[1024];
+                    char *url = (char *)calloc(sizeof(char), 1024);
                     sprintf(url, url_format, hostname_ori, host_session->session_id, start);
                     
                     // push item to queue
@@ -169,7 +174,7 @@ void *periodical_1y(void *args) {
                     start = before->one_year_ago;
                     char *url_format = "http://%s/rrd_updates?session_id=%s&start=%s&cf=AVERAGE";
                     
-                    char url[1024];
+                    char *url = (char *)calloc(sizeof(char), 1024);
                     sprintf(url, url_format, hostname_ori, host_session->session_id, start);
                     
                     // push item to queue
@@ -231,6 +236,11 @@ int get_perf_from_xenserver(const char *type, const char*url) {
     
     //如果convert.py执行时返回错误，会返回[[], ""]，此处做检测
     if(strlen(dumps_json) == 0 || ret_size ==0) {
+        Py_DecRef(ret);
+        PyGILState_Release(state);
+        curl_easy_cleanup(curl);
+        free(data_return_p->data);
+        free(before);
         return -1;
     }
     

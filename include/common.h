@@ -45,3 +45,4 @@ extern times_before_t *get_before_now(void);
 extern void strip(char *);
 extern void *MongoConnect(mongo **, const char *, const int, int *);
 extern void process_python_exception(void);
+extern void Print_Queue_Items(QUEUE *);
