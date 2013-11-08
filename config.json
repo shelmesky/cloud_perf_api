@@ -1,7 +1,7 @@
 {
 	"servers": [
 		{"host": "192.2.3.44", "username": "root", "password": "0x55aa"},
-		{"host": "192.2.4.10", "username": "root", "password": "123456"}
+		{"host": "172.31.2.2", "username": "root", "password": "qwe123"}
 	],
 	"interval": 300,
 	"daemon": 1,
